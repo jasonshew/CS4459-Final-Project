@@ -5,13 +5,15 @@
 # Also remember to install types-protobuf
 # pip install types-protobuf
 
-import grpc
 import time
 from concurrent import futures
-import replication_pb2 as replication
-import replication_pb2_grpc
+
+import grpc
+
 import heartbeat_service_pb2 as heartbeat_service
 import heartbeat_service_pb2_grpc
+import replication_pb2 as replication
+import replication_pb2_grpc
 
 SERVER_ADDRESS = 'localhost'
 SERVER_PORT = 50051
@@ -62,7 +64,7 @@ def send_heartbeat():
         stub = heartbeat_service_pb2_grpc.ViewServiceStub(channel)
         while True:
             try:
-                stub.Heartbeat(heartbeat_service.HeartbeatRequest(service_identifier="primary"))
+                stub.Heartbeat(heartbeat_service.HeartbeatRequest(service_identifier=1))
                 print("Heartbeat sent from primary server")
             except grpc.RpcError:
                 print("WARNING:\n"

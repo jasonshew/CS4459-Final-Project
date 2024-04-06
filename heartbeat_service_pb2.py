@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x17heartbeat_service.proto\x12\x0bviewservice\x1a\x1bgoogle/protobuf/empty.proto\".\n\x10HeartbeatRequest\x12\x1a\n\x12service_identifier\x18\x01 \x01(\t\"$\n\x11HeartbeatResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2Q\n\x0bViewService\x12\x42\n\tHeartbeat\x12\x1d.viewservice.HeartbeatRequest\x1a\x16.google.protobuf.Emptyb\x06proto3'
+  serialized_pb=b'\n\x17heartbeat_service.proto\x12\x0bviewservice\x1a\x1bgoogle/protobuf/empty.proto\".\n\x10HeartbeatRequest\x12\x1a\n\x12service_identifier\x18\x01 \x01(\x05\"$\n\x11HeartbeatResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2Q\n\x0bViewService\x12\x42\n\tHeartbeat\x12\x1d.viewservice.HeartbeatRequest\x1a\x16.google.protobuf.Emptyb\x06proto3'
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
 
@@ -37,8 +37,8 @@ _HEARTBEATREQUEST = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='service_identifier', full_name='viewservice.HeartbeatRequest.service_identifier', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),

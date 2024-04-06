@@ -5,7 +5,7 @@ import "google/protobuf/empty.proto";
 package viewservice;
 
 message HeartbeatRequest {
-  string service_identifier = 1;
+  int32 service_identifier = 1;
 }
 
 message HeartbeatResponse {

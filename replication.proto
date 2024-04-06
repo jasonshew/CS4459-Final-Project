@@ -3,7 +3,7 @@ syntax = "proto3";
 package replication;
 
 service Sequence {
-  rpc Write (WriteRequest) returns (WriteResponse);
+  rpc Write(WriteRequest) returns (WriteResponse);
 }
 
 message WriteRequest {
