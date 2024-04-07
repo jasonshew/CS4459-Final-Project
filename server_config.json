@@ -22,16 +22,6 @@
             "server_id": 10004,
             "address": "localhost",
             "port": 50004
-        },
-        {
-            "server_id": 10005,
-            "address": "localhost",
-            "port": 50005
-        },
-        {
-            "server_id": 10006,
-            "address": "localhost",
-            "port": 50006
         }
     ]
 }

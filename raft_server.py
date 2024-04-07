@@ -2,315 +2,457 @@ import json
 import os
 import random
 import sys
-import threading
-import time
 from concurrent import futures
-from datetime import datetime
+from enum import Enum
+from threading import Timer
 
 import grpc
 
-import heartbeat_service_pb2 as heartbeat_service
-import heartbeat_service_pb2_grpc
 import raft_pb2
 import raft_pb2_grpc
-import replication_pb2_grpc
 
 SERVER_CONFIG_FILE = "server_config.json"  # This is the default config file. Should use a customized config file using command line
-SERVER_DIRECTORY = "server_directory.json"
-ACK = "REQUEST COMPLETED"
-REQUESTS_FROM_CLIENTS = {}
-HEARTBEAT_INTERVAL = 2
-ELECTION_TIMEOUT = 5
+SERVER_DIRECTORY_FILE = "server_directory.json"
+SERVER_DIRECTORY = {}
+ELECTION_TIMEOUT = None
+HEARTBEAT_INTERVAL = 0.05
+SERVER_STATUS = None  # Server status: Follower, Candidate, Leader
+TERM_NUMBER = 0  # Current term of the server
+LEADER = None  # Current leader in the system
+SERVER_ID = 0  # Own server ID, which is unique
+SERVER_ADDRESS = None  # Own server address
+SERVER_PORT = 0  # Own server port
+VOTED = None  # ID of the server that this server voted for
+TIMER_THREAD = None  # Thread for general timers: election, heartbeat
+IS_ELECTION_FINISHED = True  # Determine if election is completed
+SERVER_LOG = []  # server log -> [{index: 0, term: 0, command: ('set', 'key1', 'val1')}, ...]
+SERVER_LOG_FILE = ""
+COMMIT_INDEX = 0
+LAST_APPLIED = 0
+NEXT_INDEX = {}
+MATCH_INDEX = {}
 
 
-class Raft(raft_pb2_grpc.RaftServicer):
-    def __init__(self, server):
-        self.server = server
-
-    def AppendEntries(self, request, context):
-        result = True
-        return raft_pb2.AppendEntriesResponse(followerID=self.server.server_id, currentTerm=self.server.current_term,
-                                              success=result)
-
-    def RequestVote(self, request, context):
-        result = True
-        return raft_pb2.RequestVoteResponse(followerID=self.server.requester_id, currentTerm=self.server.current_term,
-                                            lastLogIndex=self.server.last_log_index,
-                                            lastLogTerm=self.server.last_log_term,
-                                            voteGranted=result)
-
-    def GetLeader(self, request, context):
-        return raft_pb2.GetLeaderResponse(leadID=self.server.server_id,
-                                          leaderAddress=self.server.address + ":" + self.server.port)
-
-    def SetKV(self, request, context):
-        return raft_pb2.SetKVResponse(success=True)
-
-    def GetVal(self, request, context):
-        value_to_return = None
-        return raft_pb2.GetValResponse(success=True, value=value_to_return)
+class ServerState(Enum):
+    Follower = 1
+    Candidate = 2
+    Leader = 3
 
 
-class Server:
-    def __init__(self):
-        self.election_timer = None
-        self.election_timeout = None
-        self.voted_for = None
-        self.current_term = None
-        self.is_leader = None
-        self.peers = None
-        self.logfile = None
-        self.port = None
-        self.address = None
-        self.server_id = None
-        self.heartbeat_interval = None
-        self.heartbeat_thread = None
-        self.last_heartbeat_sender = None
-        self.last_heartbeat_arrival_time = None
-
-    def config_server(self, server_config_file, server_directory, is_leader=False):
-        dirname = os.path.dirname(__file__)
-        server_config_file = os.path.join(dirname, server_config_file)
-        server_directory = os.path.join(dirname, server_directory)
-        try:
-            with open(server_config_file, 'r') as file_1, open(server_directory, 'r') as file_2:
-                print(server_config_file, server_directory)
-                server_info = json.load(file_1)
-                servers_list = json.load(file_2)
-                server_info["peers"].clear()
-                for each_server in servers_list:
-                    if each_server["server_id"] != server_info["server_id"]:
-                        server_info["peers"].append(
-                            {"server_id": each_server["server_id"], "address": each_server["address"],
-                             "port": each_server["port"]})
-                        with open(server_config_file, 'w') as file_3:
-                            json.dump(server_info, file_3, sort_keys=False, indent=4)
-        except FileNotFoundError:
-            print("Server configuration file or server directory not found. Check your local filesystem and try again.")
-            sys.exit(0)
-        self.server_id = server_info["server_id"]
-        self.address = server_info["address"]
-        self.port = server_info["port"]
-        self.logfile = f'server_{self.server_id}_log.json'
-        self.peers = server_info['peers']
-        self.is_leader = is_leader
-        self.current_term = self.get_last_log_term()
-        self.heartbeat_interval = HEARTBEAT_INTERVAL
-        self.election_timeout = random.uniform(ELECTION_TIMEOUT, ELECTION_TIMEOUT * 2)
-        self.election_timer = threading.Timer(self.election_timeout, self.initiate_election)
-        self.start_election_timer()
-        return self
-
-    def log(self, message):
-        print(f"{self.server_id}: {message}")
-
-    def start_election_timer(self):
-        if self.election_timer is not None:
-            self.election_timer.cancel()
-        self.election_timer = threading.Timer(self.election_timeout, self.initiate_election)
-        self.election_timer.start()
-
-        # if self.heartbeat_thread is not None and not self.is_leader:
-        #     self.heartbeat_thread = None  # resetting heartbeat thread to ensure it can be restarted
-
-    def initiate_election(self):
-        print("Initiating election...............")
-        self.current_term += 1
-        self.voted_for = self.server_id
-        self.is_leader = False  # temporarily step down until election is resolved
-        self.log("Election started.")
-        if len(self.peers) == 0:
-            self.is_leader = True
-        else:
-            for server in self.peers:
-                with grpc.insecure_channel('{}:{}'.format(server["address"], server["port"])) as channel:
-                    stub = raft_pb2_grpc.RaftStub(channel)
-                    try:
-                        vote_response = stub.RequestVote(
-                            raft_pb2.VoteRequest(requester_id=self.server_id, current_term=self.current_term,
-                                                 last_log_index=self.get_last_log_index(),
-                                                 last_log_term=self.get_last_log_term()))
-                        print(f"[Vote ↗]Vote request sent from Server {self.server_id}")
-                        yield vote_response
-
-                    except grpc.RpcError as e:
-                        if "StatusCode.UNAVAILABLE" in str(e):
-                            pass
-                        else:
-                            print("Vote request failed to send\n", e)
-        if self.is_leader:
-            self.send_heartbeat()
-
-    def receive_vote_request(self, term, candidate_id):
-        if term < self.current_term:
-            return False  # Old term
-        if self.voted_for is None or self.voted_for == candidate_id:
-            self.voted_for = candidate_id
-            self.start_election_timer()  # Reset election timer
-            return True
-        return False
-
-    def send_heartbeat(self):
-        def heartbeat_loop():
-            while self.is_leader:
-                for server in self.peers:
-                    with grpc.insecure_channel('{}:{}'.format(server["address"], server["port"])) as channel:
-                        stub = heartbeat_service_pb2_grpc.ViewServiceStub(channel)
-                        try:
-                            stub.Heartbeat(
-                                heartbeat_service.HeartbeatRequest(service_identifier=self.server_id))
-                            print(
-                                f"[Heartbeat ↗] Leader Server #{self.server_id} → 🟢 Server #{server['server_id']} (Running), at {datetime.now()}")
-                        except grpc.RpcError as e:
-                            if "StatusCode.UNAVAILABLE" in str(e):
-                                print(
-                                    f"[Heartbeat ↗] Leader Server #{self.server_id} → 🔴 Server #{server['server_id']} (Offline), at {datetime.now()}")
-                                self.send_heartbeat()
-                            else:
-                                print(e)
-                    time.sleep(HEARTBEAT_INTERVAL)
-
-        if self.is_leader and self.heartbeat_thread is None:
-            self.heartbeat_thread = threading.Thread(target=heartbeat_loop)
-            self.heartbeat_thread.daemon = True
-            self.heartbeat_thread.start()
-
-    def monitor(self):
-        while not self.is_leader:
-            if self.last_heartbeat_arrival_time:
-                print(
-                    f"[Heartbeat ↙] Last received from Leader Server #{self.last_heartbeat_sender} at {self.last_heartbeat_arrival_time}")
-                time_since_last_heartbeat = (datetime.now() - self.last_heartbeat_arrival_time).total_seconds()
-                if time_since_last_heartbeat > self.election_timeout:
-                    print("[Heartbeat] TIMEOUT:", time_since_last_heartbeat)
-                    self.initiate_election()
-            else:
-                time.sleep(HEARTBEAT_INTERVAL * 2)
-                if not self.last_heartbeat_arrival_time:
-                    self.is_leader = True
-                    self.send_heartbeat()
-            time.sleep(HEARTBEAT_INTERVAL)
-
-    def get_last_log_index(self):
-        try:
-            with open(self.logfile, 'r') as file:
-                server_log = json.load(file)
-                if not len(server_log['server_log']):
-                    return 0
-                return server_log[-1]["index"]
-        except FileNotFoundError:
-            print("No existing server logfile found.")
-            return 0
-
-    def get_last_log_term(self):
-        try:
-            with open(self.logfile, 'r') as file:
-                server_log = json.load(file)
-                if not len(server_log['server_log']):
-                    return 0
-                return server_log[-1]["term"]
-        except FileNotFoundError:
-            print("No existing server logfile found.")
-            return 0
-
-    def get_current_leader(self):
-        if self.is_leader:
-            return self
-        return self.last_heartbeat_sender
-
-    def register_this_server(self):
-        the_server = {
-            "server_id": self.server_id,
-            "address": self.address,
-            "port": self.port
-        }
-        try:
-            with open(SERVER_DIRECTORY, 'r') as file_1:
-                servers_list = json.load(file_1)
-                for server in servers_list:
-                    if server["server_id"] == self.server_id:
-                        return
-                servers_list.append(the_server)
-                with open(SERVER_DIRECTORY, 'w') as file_2:
-                    json.dump(servers_list, file_2, sort_keys=False, indent=4)
-                    print("This server has been registered.")
-        except FileNotFoundError:
-            print("Server directory not found. Registration failed.")
-            sys.exit(0)
-        except PermissionError:
-            print("Permission denied. Check if the file is read-only. Registration failed.")
-            sys.exit(0)
-
-
-class ViewService(heartbeat_service_pb2_grpc.ViewServiceServicer):
-
-    def __init__(self, server):
-        self.server = server
-
-    def Heartbeat(self, request, context):
-        self.server.is_leader = False
-        now = datetime.now()
-        sender = request.service_identifier
-        self.server.last_heartbeat_arrival_time = now
-        self.server.last_heartbeat_sender = sender
-        message = "[Heartbeat ↙] From Leader Server #{}, at {}".format(sender, now)
-        print(message)
-        return heartbeat_service.google_dot_protobuf_dot_empty__pb2.Empty()
-
-
-class Sequence(replication_pb2_grpc.SequenceServicer):
-
-    def __init__(self, server):
-        self.server = server
-
-    def Write(self, request, context):
-        key_to_write = request.key
-        value_to_write = request.value
-        line_to_write = key_to_write + ' ' + value_to_write + '\n'
-        REQUESTS_FROM_CLIENTS.update({key_to_write: line_to_write})
-
-
-def run(this_server):
-    grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=500))
-    raft_pb2_grpc.add_RaftServicer_to_server(Raft(this_server), grpc_server)
-    replication_pb2_grpc.add_SequenceServicer_to_server(Sequence(this_server), grpc_server)
-    heartbeat_service_pb2_grpc.add_ViewServiceServicer_to_server(ViewService(this_server), grpc_server)
-    grpc_server.add_insecure_port('[::]:' + str(this_server.port))
-    grpc_server.start()
-    print("Server #{} is up on {}:{}\n".format(this_server.server_id, this_server.address, this_server.port))
-
-    monitor_thread = threading.Thread(target=this_server.monitor)
-    monitor_thread.daemon = True
-    monitor_thread.start()
-
-    heartbeat_thread = threading.Thread(target=this_server.send_heartbeat)
-    heartbeat_thread.daemon = True
-    heartbeat_thread.start()
-
-    election_thread = threading.Thread(target=this_server.initiate_election)
-    election_thread.daemon = True
-    election_thread.start()
-
-    grpc_server.wait_for_termination()
-
-
-if __name__ == "__main__":
-    server_config_file = SERVER_CONFIG_FILE
-    server_directory = SERVER_DIRECTORY
+def config_server():
+    global SERVER_ID, SERVER_LOG_FILE, TERM_NUMBER, SERVER_ADDRESS, SERVER_PORT, PEER_SERVERS, ELECTION_TIMEOUT, SERVER_CONFIG_FILE, SERVER_DIRECTORY_FILE
     if len(sys.argv) == 3:
-        server_config_file = sys.argv[1]
-        server_directory = sys.argv[2]
-    new_server = Server()
-    new_server.config_server(server_config_file, server_directory)
-    new_server.initiate_election()
+        SERVER_CONFIG_FILE = sys.argv[1]
+        SERVER_DIRECTORY_FILE = sys.argv[2]
+    dirname = os.path.dirname(__file__)
+    if '/' not in SERVER_CONFIG_FILE:
+        SERVER_CONFIG_FILE = os.path.join(dirname, SERVER_CONFIG_FILE)
+    if '/' not in SERVER_DIRECTORY_FILE:
+        SERVER_DIRECTORY_FILE = os.path.join(dirname, SERVER_DIRECTORY_FILE)
     try:
-        with open(new_server.logfile, 'r') as file:
+        with open(SERVER_CONFIG_FILE, 'r') as file_1, open(SERVER_DIRECTORY_FILE, 'r') as file_2:
+            server_info = json.load(file_1)
+            servers_list = json.load(file_2)
+            server_info["peers"].clear()
+            for each_server in servers_list:
+                SERVER_DIRECTORY.update(
+                    {each_server["server_id"]: each_server["address"] + ":" + str(each_server["port"])})
+                if each_server["server_id"] != server_info["server_id"]:
+                    server_info["peers"].append(
+                        {"server_id": each_server["server_id"], "address": each_server["address"],
+                         "port": each_server["port"]})
+                    with open(SERVER_CONFIG_FILE, 'w') as file_3:
+                        json.dump(server_info, file_3, sort_keys=False, indent=4)
+    except Exception:
+        print("Server configuration file or server directory not found. Check your local filesystem and try again.")
+        sys.exit(0)
+    SERVER_ID = server_info["server_id"]
+    SERVER_ADDRESS = server_info["address"]
+    SERVER_PORT = server_info["port"]
+    SERVER_LOG_FILE = f'server_{SERVER_ID}_log.json'
+
+
+def register_this_server():
+    the_server = {
+        "server_id": SERVER_ID,
+        "address": SERVER_ADDRESS,
+        "port": SERVER_PORT
+    }
+    try:
+        with open(SERVER_DIRECTORY_FILE, 'r') as file_1:
+            servers_list = json.load(file_1)
+            for server in servers_list:
+                if server["server_id"] == SERVER_ID:
+                    print("This server is already in the server directory.")
+                    return
+            servers_list.append(the_server)
+            with open(SERVER_DIRECTORY_FILE, 'w') as file_2:
+                json.dump(servers_list, file_2, sort_keys=False, indent=4)
+                print("This server has been registered successfully.")
+    except FileNotFoundError:
+        print("Server directory not found. Registration failed.")
+        sys.exit(0)
+    except PermissionError:
+        print("Permission denied. Check if the file is read-only. Registration failed.")
+        sys.exit(0)
+
+
+def verify_server_log():
+    try:
+        with open(SERVER_LOG_FILE, 'r') as file:
             logfile = json.load(file)
             print("Server logfile located: " + str(len(logfile["server_log"])) + " entries")
     except FileNotFoundError:
-        with open(new_server.logfile, 'w') as file:
+        with open(SERVER_LOG_FILE, 'w') as file:
             initialized_log = {"server_log": []}
             json.dump(initialized_log, file, sort_keys=False)
             print("Server logfile created successfully.")
-    new_server.register_this_server()
-    run(new_server)
+
+
+def replicateLog(new_log):
+    global SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, COMMIT_INDEX, SERVER_LOG, SERVER_STATUS, NEXT_INDEX, MATCH_INDEX, \
+        TIMER_THREAD
+
+    print('Log replication', new_log)
+
+    replication_success_num = 0
+    for key in list(SERVER_DIRECTORY.keys()):
+        try:
+            with grpc.insecure_channel(SERVER_DIRECTORY[key]) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+
+                message = raft_pb2.AppendEntriesMessage()
+                message.currentTerm = TERM_NUMBER
+                message.leaderID = SERVER_ID
+                message.lastLogIndex = MATCH_INDEX[key]
+                message.lastLogTerm = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[MATCH_INDEX[key]]['term']
+                message.leaderCommitIndex = COMMIT_INDEX
+
+                command_message = raft_pb2.CommandMessage(operation=new_log['command'][0], key=new_log['command'][1],
+                                                          value=new_log['command'][2])
+                log_entry = raft_pb2.LogEntry(index=new_log['index'], term=new_log['term'], command=command_message)
+
+                message.logEntries.append(log_entry)
+
+                response = stub.AppendEntries(message)
+
+                print(response)
+
+            if response.currentTerm > TERM_NUMBER:
+                TIMER_THREAD.cancel()
+                TERM_NUMBER = response.currentTerm
+                SERVER_STATUS = ServerState.Follower
+
+                print(f"I am follower. Term: {TERM_NUMBER}")
+
+                TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
+                TIMER_THREAD.start()
+                break
+
+            if response.success:
+                replication_success_num += 1
+
+                NEXT_INDEX[key] += 1
+                MATCH_INDEX[key] = NEXT_INDEX[key] - 1
+
+        except grpc.RpcError:
+            continue
+        except Exception as Error:
+            print(Error)
+
+    if replication_success_num > len(list(SERVER_DIRECTORY.keys())) / 2:
+        COMMIT_INDEX += 1
+
+
+class Raft(raft_pb2_grpc.RaftServicer):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def SetKeyVal(self, request, context):
+        global SERVER_LOG, COMMIT_INDEX, LAST_APPLIED, SERVER_STATUS, TERM_NUMBER, LEADER, SERVER_DIRECTORY
+        try:
+            if SERVER_STATUS.name == 'Candidate':
+                return raft_pb2.SetKeyValResponse(success=False)
+
+            if SERVER_STATUS.name == 'Leader':
+                new_log_entry = {'index': len(SERVER_LOG), 'term': TERM_NUMBER,
+                                 'command': ('set', request.key, request.value)}
+
+                replicateLog(new_log_entry)
+
+                SERVER_LOG.append(new_log_entry)
+                LAST_APPLIED += 1
+
+                print(SERVER_LOG)
+
+                with open(SERVER_LOG_FILE, 'r') as file:
+                    json_data = json.load(file)
+                    json_data.append(new_log_entry)
+                with open(SERVER_LOG_FILE, 'w') as file:
+                    file.write(json.dumps(json_data, indent=4))
+
+                return raft_pb2.SetKeyValResponse(success=True)
+            else:  # Follower case
+                with grpc.insecure_channel(SERVER_DIRECTORY[LEADER]) as leader_channel:
+                    leader_stub = raft_pb2_grpc.RaftStub(leader_channel)
+                    message = raft_pb2.SetKeyValMessage(key=request.key, value=request.value)
+                    return leader_stub.SetKeyVal(message)
+        except Exception as Error:
+            return raft_pb2.SetKeyValResponse(success=False)
+
+    def GetVal(self, request, context):
+        global SERVER_LOG
+
+        print(SERVER_LOG)
+
+        target_value = None
+        for entry in SERVER_LOG:
+            if request.key == entry['command'][1]:
+                target_value = entry['command'][2]
+
+        return raft_pb2.GetValResponse(success=True, value=target_value)
+
+    def GetLeader(self, request, context):
+        global LEADER, SERVER_DIRECTORY, SERVER_ID, SERVER_ADDRESS
+        current_leader = LEADER
+
+        if LEADER is None:
+            current_leader = -1
+            address = ''
+        else:
+            if LEADER == SERVER_ID:
+                address = SERVER_ADDRESS
+            else:
+                address = SERVER_DIRECTORY[LEADER]
+
+        print(f'{current_leader} {address}')
+
+        return raft_pb2.GetLeaderResponse(leaderID=current_leader, leaderAddress=address)
+
+    def AppendEntries(self, request, context):
+        global TIMER_THREAD, TERM_NUMBER, SERVER_STATUS, ELECTION_TIMEOUT, LEADER, VOTED, SERVER_LOG, COMMIT_INDEX
+
+        # Reset timer only if this server is a Follower
+        if SERVER_STATUS.name == 'Follower':
+            TIMER_THREAD.cancel()
+
+        heartbeat_success = False
+        if request.currentTerm >= TERM_NUMBER:
+            heartbeat_success = True
+            LEADER = request.leaderID
+
+            # Write SERVER_LOG
+            if SERVER_LOG[request.lastLogIndex] is None and len(SERVER_LOG) > 0:
+                heartbeat_success = False
+            else:
+                log_entry = request.logEntries[0]
+                log_command = log_entry.command
+
+                SERVER_LOG.append({'index': log_entry.index, 'term': log_entry.term,
+                                   'command': (log_command.operation, log_command.key, log_command.value)})
+
+                COMMIT_INDEX = min(request.leaderCommit, SERVER_LOG[-1]['index'])
+
+                print('Server log updated')
+                print(SERVER_LOG)
+                print(f'Leader commit index: {COMMIT_INDEX}')
+
+            if request.currentTerm > TERM_NUMBER:  # Update own term
+                VOTED = None
+                TERM_NUMBER = request.currentTerm
+                print(f"This server #{SERVER_ID} is a follower (Current Term: {TERM_NUMBER})")
+
+                # Become follower due to higher Term
+                if SERVER_STATUS.name == 'Candidate' or SERVER_STATUS.name == 'Leader':  # Become Follower if greater term is come
+                    SERVER_STATUS = ServerState.Follower
+                    print(f"This server #{SERVER_ID} has become a follower (Current Term: {TERM_NUMBER})")
+                    TIMER_THREAD.cancel()  # Cancel Timer for Candidate and Leader
+
+        # Create new timer for Follower
+        if SERVER_STATUS.name == 'Follower':
+            TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
+            TIMER_THREAD.start()
+
+        return raft_pb2.AppendEntriesResponse(followerID=SERVER_ID, currentTerm=TERM_NUMBER, success=heartbeat_success)
+
+    def RequestVote(self, request, context):
+        global VOTED, TERM_NUMBER, SERVER_STATUS, TIMER_THREAD, ELECTION_TIMEOUT, LEADER
+
+        voting_success = False
+        if SERVER_STATUS.name == 'Follower':
+            TIMER_THREAD.cancel()
+
+        if request.currentTerm >= TERM_NUMBER:
+            if request.currentTerm > TERM_NUMBER:
+                TERM_NUMBER = request.currentTerm
+                VOTED = request.candidateID
+                voting_success = True
+
+                print(f'This server voted for Server #{request.candidateID}')
+
+                # Become follower due to higher Term
+                if SERVER_STATUS.name == 'Candidate' or SERVER_STATUS.name == 'Leader':
+                    SERVER_STATUS = ServerState.Follower
+                    print(f"This server #{SERVER_ID} has become a follower (Current Term: {TERM_NUMBER})")
+                    TIMER_THREAD.cancel()
+
+            if VOTED is None:
+                VOTED = request.candidateID
+                voting_success = True
+
+                print(f'Voted for Server #{request.candidateID}')
+
+        if SERVER_STATUS.name == 'Follower':
+            TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
+            TIMER_THREAD.start()
+
+        return raft_pb2.RequestVoteResponse(currentTerm=TERM_NUMBER, voteGranted=voting_success)
+
+
+def send_heartbeat():
+    global SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, TIMER_THREAD, SERVER_STATUS, ELECTION_TIMEOUT, COMMIT_INDEX, SERVER_LOG
+
+    for key in list(SERVER_DIRECTORY.keys()):
+        try:
+            with grpc.insecure_channel(SERVER_DIRECTORY[key]) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+
+                message = raft_pb2.AppendEntriesMessage()
+                message.leaderID = SERVER_ID
+                message.currentTerm = TERM_NUMBER
+                message.lastLogIndex = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[-1]['index']
+                message.lastLogTerm = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[-1]['term']
+                message.leaderCommitIndex = COMMIT_INDEX
+                response = stub.AppendEntries(message)
+
+                if response.currentTerm > TERM_NUMBER:
+                    TIMER_THREAD.cancel()
+                    TERM_NUMBER = response.currentTerm
+                    SERVER_STATUS = ServerState.Follower
+
+                    print(f"This server #{SERVER_ID} has become a Follower (Current Term: {TERM_NUMBER})")
+
+                    TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
+                    TIMER_THREAD.start()
+                    break
+
+        except grpc.RpcError:
+            continue
+
+
+class RaftTimer(Timer):
+    def run(self):
+        while not self.finished.wait(self.interval):
+            self.function(*self.args, **self.kwargs)
+
+
+def generate_random_timeout():
+    return random.randrange(150, 300) / 1000
+
+
+def start_election():
+    global SERVER_STATUS, SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, TIMER_THREAD, VOTED, LEADER, ELECTION_TIMEOUT, IS_ELECTION_FINISHED
+
+    if LEADER is None:
+        print("Leader Server not discovered yet")
+    else:
+        print(f'Leader Server #{LEADER} went down')
+
+    IS_ELECTION_FINISHED = False
+
+    TIMER_THREAD.cancel()  # Cancel previous timer
+    TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, stop_election)
+
+    SERVER_STATUS = ServerState.Candidate
+    TERM_NUMBER += 1
+    votes = 1
+    VOTED = SERVER_ID
+    print(f"This server #{SERVER_ID} (Status: Candidate / Current Term: {TERM_NUMBER}) voted for Server #{SERVER_ID}")
+
+    # Start collecting votes
+    for key in list(SERVER_DIRECTORY.keys()):
+        try:
+            if IS_ELECTION_FINISHED:  # Election finished due to timer is up
+                break
+
+            with grpc.insecure_channel(SERVER_DIRECTORY[key]) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+
+                message = raft_pb2.RequestVoteMessage(candidateID=SERVER_ID, currentTerm=TERM_NUMBER)
+                response = stub.RequestVote(message)
+
+            if response.voteGranted:
+                votes += 1
+            else:
+                if response.currentTerm > TERM_NUMBER:
+                    TERM_NUMBER = response.currentTerm
+                    SERVER_STATUS = ServerState.Follower
+                    print(
+                        f"This server #{SERVER_ID} (Status: Follower / Current Term: {TERM_NUMBER}) opted out of "
+                        f"election")
+                    break
+        except grpc.RpcError:
+            continue
+
+    if SERVER_STATUS.name == 'Follower':  # Candidate became Follower during election
+        TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
+    else:
+        if votes == 1:
+            print('1 vote received')
+        if votes > 1:
+            print(f'{votes} votes received')
+
+        majority = len(list(SERVER_DIRECTORY.keys())) / 2
+
+        if votes > majority:
+            print(f"This server #{SERVER_ID} is the Leader (Term: {TERM_NUMBER})")
+            SERVER_STATUS = ServerState.Leader
+            LEADER = SERVER_ID
+            TIMER_THREAD = RaftTimer(HEARTBEAT_INTERVAL, send_heartbeat)
+        else:  # Candidate does not have the majority of votes
+            SERVER_STATUS = ServerState.Follower
+            ELECTION_TIMEOUT = generate_random_timeout()
+            TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
+
+    TIMER_THREAD.start()
+    VOTED = None
+
+
+# Stop election when timer is up
+def stop_election():
+    global IS_ELECTION_FINISHED
+    IS_ELECTION_FINISHED = True
+
+
+def serve():
+    global SERVER_STATUS, TIMER_THREAD, SERVER_ID, ELECTION_TIMEOUT, SERVER_ADDRESS, TERM_NUMBER, SERVER_DIRECTORY, MATCH_INDEX, NEXT_INDEX
+    SERVER_STATUS = ServerState.Follower
+    ELECTION_TIMEOUT = generate_random_timeout()
+
+    grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    raft_pb2_grpc.add_RaftServicer_to_server(Raft(), grpc_server)
+    grpc_server.add_insecure_port('[::]:' + str(SERVER_PORT))
+
+    MATCH_INDEX[SERVER_ID] = 0
+    NEXT_INDEX[SERVER_ID] = 0
+
+    try:
+        TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
+        grpc_server.start()
+        TIMER_THREAD.start()
+
+        print("This server #{} is up on {}:{} as a Follower (Current Term: {})\n".format(SERVER_ID, TERM_NUMBER,
+                                                                                         SERVER_ADDRESS,
+                                                                                         SERVER_PORT))
+
+        grpc_server.wait_for_termination()
+    except KeyboardInterrupt:
+        print(f'\nStopping this server #{SERVER_ID}')
+        TIMER_THREAD.cancel()
+
+
+if __name__ == "__main__":
+    config_server()
+    verify_server_log()
+    register_this_server()
+    serve()

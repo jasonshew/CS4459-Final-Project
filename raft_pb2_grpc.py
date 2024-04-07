@@ -29,10 +29,10 @@ class RaftStub(object):
                 request_serializer=raft__pb2.EmptyMessage.SerializeToString,
                 response_deserializer=raft__pb2.GetLeaderResponse.FromString,
                 )
-        self.SetKV = channel.unary_unary(
-                '/raft.Raft/SetKV',
-                request_serializer=raft__pb2.SetKVMessage.SerializeToString,
-                response_deserializer=raft__pb2.SetKVResponse.FromString,
+        self.SetKeyVal = channel.unary_unary(
+                '/raft.Raft/SetKeyVal',
+                request_serializer=raft__pb2.SetKeyValMessage.SerializeToString,
+                response_deserializer=raft__pb2.SetKeyValResponse.FromString,
                 )
         self.GetVal = channel.unary_unary(
                 '/raft.Raft/GetVal',
@@ -62,7 +62,7 @@ class RaftServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SetKV(self, request, context):
+    def SetKeyVal(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -92,10 +92,10 @@ def add_RaftServicer_to_server(servicer, server):
                     request_deserializer=raft__pb2.EmptyMessage.FromString,
                     response_serializer=raft__pb2.GetLeaderResponse.SerializeToString,
             ),
-            'SetKV': grpc.unary_unary_rpc_method_handler(
-                    servicer.SetKV,
-                    request_deserializer=raft__pb2.SetKVMessage.FromString,
-                    response_serializer=raft__pb2.SetKVResponse.SerializeToString,
+            'SetKeyVal': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetKeyVal,
+                    request_deserializer=raft__pb2.SetKeyValMessage.FromString,
+                    response_serializer=raft__pb2.SetKeyValResponse.SerializeToString,
             ),
             'GetVal': grpc.unary_unary_rpc_method_handler(
                     servicer.GetVal,
@@ -164,7 +164,7 @@ class Raft(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def SetKV(request,
+    def SetKeyVal(request,
             target,
             options=(),
             channel_credentials=None,
@@ -174,9 +174,9 @@ class Raft(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/raft.Raft/SetKV',
-            raft__pb2.SetKVMessage.SerializeToString,
-            raft__pb2.SetKVResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/raft.Raft/SetKeyVal',
+            raft__pb2.SetKeyValMessage.SerializeToString,
+            raft__pb2.SetKeyValResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

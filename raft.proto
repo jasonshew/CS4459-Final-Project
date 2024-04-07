@@ -11,6 +11,47 @@ message AppendEntriesMessage {
   int32 leaderCommitIndex = 6;
 }
 
+message AppendEntriesResponse {
+  int32 followerID = 1;
+  int32 currentTerm = 2;
+  bool success = 3;
+}
+
+
+message RequestVoteMessage{
+  int32 candidateID = 1;
+  int32 currentTerm = 2;
+}
+
+message RequestVoteResponse{
+  int32 currentTerm = 1;
+  bool voteGranted = 2;
+}
+
+
+message SetKeyValMessage {
+  string key = 1;
+  string value = 2;
+}
+
+message SetKeyValResponse {
+  bool success = 1;
+}
+
+message GetValMessage {
+  string key = 1;
+}
+
+message GetValResponse {
+  bool success = 1;
+  string value = 2;
+}
+
+message GetLeaderResponse {
+  int32 leaderID = 1;
+  string leaderAddress = 2;
+}
+
 message LogEntry {
   int64 index = 1;
   int32 term = 2;
@@ -23,58 +64,12 @@ message CommandMessage {
   string value = 3;
 }
 
-message AppendEntriesResponse {
-  int32 followerID = 1;
-  int32 currentTerm = 2;
-  bool success = 3;
-}
-
-message RequestVoteMessage{
-  int32 candidateID = 1;
-  int32 currentTerm = 2;
-  int64 lastLogIndex = 3;
-  int32 lastLogTerm = 4;
-}
-
-message RequestVoteResponse{
-  int32 followerID = 1;
-  int32 currentTerm = 2;
-  int64 lastLogIndex = 3;
-  int32 lastLogTerm = 4;
-  bool voteGranted = 5;
-}
-
-message GetLeaderResponse {
-  int32 leaderID = 1;
-  string leaderAddress = 2;
-}
-
-message SetKVMessage {
-  string key = 1;
-  string value = 2;
-}
-
-message GetValMessage {
-  string key = 1;
-}
-
-message SetKVResponse {
-  bool success = 1;
-}
-
-message GetValResponse {
-  bool success = 1;
-  string value = 2;
-}
-
-
-
 message EmptyMessage {}
 
 service Raft{
   rpc AppendEntries(stream AppendEntriesMessage) returns (AppendEntriesResponse);
   rpc RequestVote(RequestVoteMessage) returns (RequestVoteResponse);
   rpc GetLeader(EmptyMessage) returns (GetLeaderResponse);
-  rpc SetKV(SetKVMessage) returns (SetKVResponse);
+  rpc SetKeyVal(SetKeyValMessage) returns (SetKeyValResponse);
   rpc GetVal(GetValMessage) returns (GetValResponse);
 }
