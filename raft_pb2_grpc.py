@@ -16,18 +16,28 @@ class RaftStub(object):
         """
         self.AppendEntries = channel.stream_unary(
                 '/raft.Raft/AppendEntries',
-                request_serializer=raft__pb2.AppendEntriesRequest.SerializeToString,
-                response_deserializer=raft__pb2.AppendEntriesReply.FromString,
+                request_serializer=raft__pb2.AppendEntriesMessage.SerializeToString,
+                response_deserializer=raft__pb2.AppendEntriesResponse.FromString,
                 )
         self.RequestVote = channel.unary_unary(
                 '/raft.Raft/RequestVote',
-                request_serializer=raft__pb2.VoteRequest.SerializeToString,
-                response_deserializer=raft__pb2.VoteReply.FromString,
+                request_serializer=raft__pb2.RequestVoteMessage.SerializeToString,
+                response_deserializer=raft__pb2.RequestVoteResponse.FromString,
                 )
-        self.Submit = channel.unary_unary(
-                '/raft.Raft/Submit',
-                request_serializer=raft__pb2.SubmitRequest.SerializeToString,
-                response_deserializer=raft__pb2.SubmitReply.FromString,
+        self.GetLeader = channel.unary_unary(
+                '/raft.Raft/GetLeader',
+                request_serializer=raft__pb2.EmptyMessage.SerializeToString,
+                response_deserializer=raft__pb2.GetLeaderResponse.FromString,
+                )
+        self.SetKV = channel.unary_unary(
+                '/raft.Raft/SetKV',
+                request_serializer=raft__pb2.SetKVMessage.SerializeToString,
+                response_deserializer=raft__pb2.SetKVResponse.FromString,
+                )
+        self.GetVal = channel.unary_unary(
+                '/raft.Raft/GetVal',
+                request_serializer=raft__pb2.GetValMessage.SerializeToString,
+                response_deserializer=raft__pb2.GetValResponse.FromString,
                 )
 
 
@@ -46,7 +56,19 @@ class RaftServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Submit(self, request, context):
+    def GetLeader(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetKV(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetVal(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -57,18 +79,28 @@ def add_RaftServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'AppendEntries': grpc.stream_unary_rpc_method_handler(
                     servicer.AppendEntries,
-                    request_deserializer=raft__pb2.AppendEntriesRequest.FromString,
-                    response_serializer=raft__pb2.AppendEntriesReply.SerializeToString,
+                    request_deserializer=raft__pb2.AppendEntriesMessage.FromString,
+                    response_serializer=raft__pb2.AppendEntriesResponse.SerializeToString,
             ),
             'RequestVote': grpc.unary_unary_rpc_method_handler(
                     servicer.RequestVote,
-                    request_deserializer=raft__pb2.VoteRequest.FromString,
-                    response_serializer=raft__pb2.VoteReply.SerializeToString,
+                    request_deserializer=raft__pb2.RequestVoteMessage.FromString,
+                    response_serializer=raft__pb2.RequestVoteResponse.SerializeToString,
             ),
-            'Submit': grpc.unary_unary_rpc_method_handler(
-                    servicer.Submit,
-                    request_deserializer=raft__pb2.SubmitRequest.FromString,
-                    response_serializer=raft__pb2.SubmitReply.SerializeToString,
+            'GetLeader': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetLeader,
+                    request_deserializer=raft__pb2.EmptyMessage.FromString,
+                    response_serializer=raft__pb2.GetLeaderResponse.SerializeToString,
+            ),
+            'SetKV': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetKV,
+                    request_deserializer=raft__pb2.SetKVMessage.FromString,
+                    response_serializer=raft__pb2.SetKVResponse.SerializeToString,
+            ),
+            'GetVal': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetVal,
+                    request_deserializer=raft__pb2.GetValMessage.FromString,
+                    response_serializer=raft__pb2.GetValResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -92,8 +124,8 @@ class Raft(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.stream_unary(request_iterator, target, '/raft.Raft/AppendEntries',
-            raft__pb2.AppendEntriesRequest.SerializeToString,
-            raft__pb2.AppendEntriesReply.FromString,
+            raft__pb2.AppendEntriesMessage.SerializeToString,
+            raft__pb2.AppendEntriesResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -109,13 +141,13 @@ class Raft(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/raft.Raft/RequestVote',
-            raft__pb2.VoteRequest.SerializeToString,
-            raft__pb2.VoteReply.FromString,
+            raft__pb2.RequestVoteMessage.SerializeToString,
+            raft__pb2.RequestVoteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Submit(request,
+    def GetLeader(request,
             target,
             options=(),
             channel_credentials=None,
@@ -125,8 +157,42 @@ class Raft(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/raft.Raft/Submit',
-            raft__pb2.SubmitRequest.SerializeToString,
-            raft__pb2.SubmitReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/raft.Raft/GetLeader',
+            raft__pb2.EmptyMessage.SerializeToString,
+            raft__pb2.GetLeaderResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SetKV(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/raft.Raft/SetKV',
+            raft__pb2.SetKVMessage.SerializeToString,
+            raft__pb2.SetKVResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetVal(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/raft.Raft/GetVal',
+            raft__pb2.GetValMessage.SerializeToString,
+            raft__pb2.GetValResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

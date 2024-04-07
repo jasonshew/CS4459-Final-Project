@@ -28,16 +28,27 @@ class Raft(raft_pb2_grpc.RaftServicer):
         self.server = server
 
     def AppendEntries(self, request, context):
-        return raft_pb2.AppendEntriesReply(replier_id=request.requester_id, current_term=request.term,
-                                           success=request.success)
+        result = True
+        return raft_pb2.AppendEntriesResponse(followerID=self.server.server_id, currentTerm=self.server.current_term,
+                                              success=result)
 
     def RequestVote(self, request, context):
-        return raft_pb2.VoteReply(replier_id=self.server.requester_id, current_term=request.current_term,
-                                  last_log_index=request.last_log_index, last_log_term=request.last_log_term,
-                                  vote_granted=True)
+        result = True
+        return raft_pb2.RequestVoteResponse(followerID=self.server.requester_id, currentTerm=self.server.current_term,
+                                            lastLogIndex=self.server.last_log_index,
+                                            lastLogTerm=self.server.last_log_term,
+                                            voteGranted=result)
 
-    def Submit(self, request, context):
-        return raft_pb2.SubmitReply(replier_id=request.requester_id, message=request.message)
+    def GetLeader(self, request, context):
+        return raft_pb2.GetLeaderResponse(leadID=self.server.server_id,
+                                          leaderAddress=self.server.address + ":" + self.server.port)
+
+    def SetKV(self, request, context):
+        return raft_pb2.SetKVResponse(success=True)
+
+    def GetVal(self, request, context):
+        value_to_return = None
+        return raft_pb2.GetValResponse(success=True, value=value_to_return)
 
 
 class Server:

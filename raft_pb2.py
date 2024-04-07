@@ -19,58 +19,58 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\nraft.proto\x12\x04raft\"\xa2\x01\n\x14\x41ppendEntriesRequest\x12\x14\n\x0crequester_id\x18\x01 \x01(\x05\x12\x14\n\x0c\x63urrent_term\x18\x02 \x01(\x05\x12\x16\n\x0elast_log_index\x18\x04 \x01(\x03\x12\x15\n\rlast_log_term\x18\x05 \x01(\x05\x12\x12\n\nop_entries\x18\x06 \x03(\t\x12\x1b\n\x13leader_commit_index\x18\x07 \x01(\x05\"O\n\x12\x41ppendEntriesReply\x12\x12\n\nreplier_id\x18\x01 \x01(\x05\x12\x14\n\x0c\x63urrent_term\x18\x02 \x01(\x05\x12\x0f\n\x07success\x18\x03 \x01(\x08\"h\n\x0bVoteRequest\x12\x14\n\x0crequester_id\x18\x01 \x01(\x05\x12\x14\n\x0c\x63urrent_term\x18\x02 \x01(\x05\x12\x16\n\x0elast_log_index\x18\x03 \x01(\x03\x12\x15\n\rlast_log_term\x18\x04 \x01(\x05\"z\n\tVoteReply\x12\x12\n\nreplier_id\x18\x01 \x01(\x05\x12\x14\n\x0c\x63urrent_term\x18\x02 \x01(\x05\x12\x16\n\x0elast_log_index\x18\x03 \x01(\x03\x12\x15\n\rlast_log_term\x18\x04 \x01(\x05\x12\x14\n\x0cvote_granted\x18\x05 \x01(\x08\"%\n\rSubmitRequest\x12\x14\n\x0crequester_id\x18\x01 \x01(\x05\"2\n\x0bSubmitReply\x12\x12\n\nreplier_id\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t2\xb4\x01\n\x04Raft\x12G\n\rAppendEntries\x12\x1a.raft.AppendEntriesRequest\x1a\x18.raft.AppendEntriesReply(\x01\x12\x31\n\x0bRequestVote\x12\x11.raft.VoteRequest\x1a\x0f.raft.VoteReply\x12\x30\n\x06Submit\x12\x13.raft.SubmitRequest\x1a\x11.raft.SubmitReplyb\x06proto3'
+  serialized_pb=b'\n\nraft.proto\x12\x04raft\"\xa7\x01\n\x14\x41ppendEntriesMessage\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x14\n\x0clastLogIndex\x18\x03 \x01(\x03\x12\x13\n\x0blastLogTerm\x18\x04 \x01(\x05\x12\"\n\nlogEntries\x18\x05 \x03(\x0b\x32\x0e.raft.LogEntry\x12\x19\n\x11leaderCommitIndex\x18\x06 \x01(\x05\"N\n\x08LogEntry\x12\r\n\x05index\x18\x01 \x01(\x03\x12\x0c\n\x04term\x18\x02 \x01(\x05\x12%\n\x07\x63ommand\x18\x03 \x01(\x0b\x32\x14.raft.CommandMessage\"?\n\x0e\x43ommandMessage\x12\x11\n\toperation\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12\r\n\x05value\x18\x03 \x01(\t\"P\n\x15\x41ppendEntriesResponse\x12\x11\n\treplierID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x0f\n\x07success\x18\x03 \x01(\x08\"i\n\x12RequestVoteMessage\x12\x13\n\x0b\x63\x61ndidateID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x14\n\x0clastLogIndex\x18\x03 \x01(\x03\x12\x13\n\x0blastLogTerm\x18\x04 \x01(\x05\"}\n\x13RequestVoteResponse\x12\x11\n\treplierID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x14\n\x0clastLogIndex\x18\x03 \x01(\x03\x12\x13\n\x0blastLogTerm\x18\x04 \x01(\x05\x12\x13\n\x0bvoteGranted\x18\x05 \x01(\x08\"<\n\x11GetLeaderResponse\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x15\n\rleaderAddress\x18\x02 \x01(\t\"*\n\x0cSetKVMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x1c\n\rGetValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\" \n\rSetKVResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"0\n\x0eGetValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\r\n\x05value\x18\x02 \x01(\t\"\x0e\n\x0c\x45mptyMessage2\xb7\x02\n\x04Raft\x12J\n\rAppendEntries\x12\x1a.raft.AppendEntriesMessage\x1a\x1b.raft.AppendEntriesResponse(\x01\x12\x42\n\x0bRequestVote\x12\x18.raft.RequestVoteMessage\x1a\x19.raft.RequestVoteResponse\x12\x38\n\tGetLeader\x12\x12.raft.EmptyMessage\x1a\x17.raft.GetLeaderResponse\x12\x30\n\x05SetKV\x12\x12.raft.SetKVMessage\x1a\x13.raft.SetKVResponse\x12\x33\n\x06GetVal\x12\x13.raft.GetValMessage\x1a\x14.raft.GetValResponseb\x06proto3'
 )
 
 
 
 
-_APPENDENTRIESREQUEST = _descriptor.Descriptor(
-  name='AppendEntriesRequest',
-  full_name='raft.AppendEntriesRequest',
+_APPENDENTRIESMESSAGE = _descriptor.Descriptor(
+  name='AppendEntriesMessage',
+  full_name='raft.AppendEntriesMessage',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='requester_id', full_name='raft.AppendEntriesRequest.requester_id', index=0,
+      name='leaderID', full_name='raft.AppendEntriesMessage.leaderID', index=0,
       number=1, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='current_term', full_name='raft.AppendEntriesRequest.current_term', index=1,
+      name='currentTerm', full_name='raft.AppendEntriesMessage.currentTerm', index=1,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='last_log_index', full_name='raft.AppendEntriesRequest.last_log_index', index=2,
-      number=4, type=3, cpp_type=2, label=1,
+      name='lastLogIndex', full_name='raft.AppendEntriesMessage.lastLogIndex', index=2,
+      number=3, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='last_log_term', full_name='raft.AppendEntriesRequest.last_log_term', index=3,
-      number=5, type=5, cpp_type=1, label=1,
+      name='lastLogTerm', full_name='raft.AppendEntriesMessage.lastLogTerm', index=3,
+      number=4, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='op_entries', full_name='raft.AppendEntriesRequest.op_entries', index=4,
-      number=6, type=9, cpp_type=9, label=3,
+      name='logEntries', full_name='raft.AppendEntriesMessage.logEntries', index=4,
+      number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='leader_commit_index', full_name='raft.AppendEntriesRequest.leader_commit_index', index=5,
-      number=7, type=5, cpp_type=1, label=1,
+      name='leaderCommitIndex', full_name='raft.AppendEntriesMessage.leaderCommitIndex', index=5,
+      number=6, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -88,34 +88,126 @@ _APPENDENTRIESREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=21,
-  serialized_end=183,
+  serialized_end=188,
 )
 
 
-_APPENDENTRIESREPLY = _descriptor.Descriptor(
-  name='AppendEntriesReply',
-  full_name='raft.AppendEntriesReply',
+_LOGENTRY = _descriptor.Descriptor(
+  name='LogEntry',
+  full_name='raft.LogEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='replier_id', full_name='raft.AppendEntriesReply.replier_id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
+      name='index', full_name='raft.LogEntry.index', index=0,
+      number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='current_term', full_name='raft.AppendEntriesReply.current_term', index=1,
+      name='term', full_name='raft.LogEntry.term', index=1,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='success', full_name='raft.AppendEntriesReply.success', index=2,
+      name='command', full_name='raft.LogEntry.command', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=190,
+  serialized_end=268,
+)
+
+
+_COMMANDMESSAGE = _descriptor.Descriptor(
+  name='CommandMessage',
+  full_name='raft.CommandMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='operation', full_name='raft.CommandMessage.operation', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='key', full_name='raft.CommandMessage.key', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='raft.CommandMessage.value', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=270,
+  serialized_end=333,
+)
+
+
+_APPENDENTRIESRESPONSE = _descriptor.Descriptor(
+  name='AppendEntriesResponse',
+  full_name='raft.AppendEntriesResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='replierID', full_name='raft.AppendEntriesResponse.replierID', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='currentTerm', full_name='raft.AppendEntriesResponse.currentTerm', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='success', full_name='raft.AppendEntriesResponse.success', index=2,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -133,42 +225,42 @@ _APPENDENTRIESREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=185,
-  serialized_end=264,
+  serialized_start=335,
+  serialized_end=415,
 )
 
 
-_VOTEREQUEST = _descriptor.Descriptor(
-  name='VoteRequest',
-  full_name='raft.VoteRequest',
+_REQUESTVOTEMESSAGE = _descriptor.Descriptor(
+  name='RequestVoteMessage',
+  full_name='raft.RequestVoteMessage',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='requester_id', full_name='raft.VoteRequest.requester_id', index=0,
+      name='candidateID', full_name='raft.RequestVoteMessage.candidateID', index=0,
       number=1, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='current_term', full_name='raft.VoteRequest.current_term', index=1,
+      name='currentTerm', full_name='raft.RequestVoteMessage.currentTerm', index=1,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='last_log_index', full_name='raft.VoteRequest.last_log_index', index=2,
+      name='lastLogIndex', full_name='raft.RequestVoteMessage.lastLogIndex', index=2,
       number=3, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='last_log_term', full_name='raft.VoteRequest.last_log_term', index=3,
+      name='lastLogTerm', full_name='raft.RequestVoteMessage.lastLogTerm', index=3,
       number=4, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -186,49 +278,49 @@ _VOTEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=266,
-  serialized_end=370,
+  serialized_start=417,
+  serialized_end=522,
 )
 
 
-_VOTEREPLY = _descriptor.Descriptor(
-  name='VoteReply',
-  full_name='raft.VoteReply',
+_REQUESTVOTERESPONSE = _descriptor.Descriptor(
+  name='RequestVoteResponse',
+  full_name='raft.RequestVoteResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='replier_id', full_name='raft.VoteReply.replier_id', index=0,
+      name='replierID', full_name='raft.RequestVoteResponse.replierID', index=0,
       number=1, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='current_term', full_name='raft.VoteReply.current_term', index=1,
+      name='currentTerm', full_name='raft.RequestVoteResponse.currentTerm', index=1,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='last_log_index', full_name='raft.VoteReply.last_log_index', index=2,
+      name='lastLogIndex', full_name='raft.RequestVoteResponse.lastLogIndex', index=2,
       number=3, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='last_log_term', full_name='raft.VoteReply.last_log_term', index=3,
+      name='lastLogTerm', full_name='raft.RequestVoteResponse.lastLogTerm', index=3,
       number=4, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='vote_granted', full_name='raft.VoteReply.vote_granted', index=4,
+      name='voteGranted', full_name='raft.RequestVoteResponse.voteGranted', index=4,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -246,60 +338,28 @@ _VOTEREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=372,
-  serialized_end=494,
+  serialized_start=524,
+  serialized_end=649,
 )
 
 
-_SUBMITREQUEST = _descriptor.Descriptor(
-  name='SubmitRequest',
-  full_name='raft.SubmitRequest',
+_GETLEADERRESPONSE = _descriptor.Descriptor(
+  name='GetLeaderResponse',
+  full_name='raft.GetLeaderResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='requester_id', full_name='raft.SubmitRequest.requester_id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=496,
-  serialized_end=533,
-)
-
-
-_SUBMITREPLY = _descriptor.Descriptor(
-  name='SubmitReply',
-  full_name='raft.SubmitReply',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='replier_id', full_name='raft.SubmitReply.replier_id', index=0,
+      name='leaderID', full_name='raft.GetLeaderResponse.leaderID', index=0,
       number=1, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='message', full_name='raft.SubmitReply.message', index=1,
+      name='leaderAddress', full_name='raft.GetLeaderResponse.leaderAddress', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -317,59 +377,276 @@ _SUBMITREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=535,
-  serialized_end=585,
+  serialized_start=651,
+  serialized_end=711,
 )
 
-DESCRIPTOR.message_types_by_name['AppendEntriesRequest'] = _APPENDENTRIESREQUEST
-DESCRIPTOR.message_types_by_name['AppendEntriesReply'] = _APPENDENTRIESREPLY
-DESCRIPTOR.message_types_by_name['VoteRequest'] = _VOTEREQUEST
-DESCRIPTOR.message_types_by_name['VoteReply'] = _VOTEREPLY
-DESCRIPTOR.message_types_by_name['SubmitRequest'] = _SUBMITREQUEST
-DESCRIPTOR.message_types_by_name['SubmitReply'] = _SUBMITREPLY
+
+_SETKVMESSAGE = _descriptor.Descriptor(
+  name='SetKVMessage',
+  full_name='raft.SetKVMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='raft.SetKVMessage.key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='raft.SetKVMessage.value', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=713,
+  serialized_end=755,
+)
+
+
+_GETVALMESSAGE = _descriptor.Descriptor(
+  name='GetValMessage',
+  full_name='raft.GetValMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='raft.GetValMessage.key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=757,
+  serialized_end=785,
+)
+
+
+_SETKVRESPONSE = _descriptor.Descriptor(
+  name='SetKVResponse',
+  full_name='raft.SetKVResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='success', full_name='raft.SetKVResponse.success', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=787,
+  serialized_end=819,
+)
+
+
+_GETVALRESPONSE = _descriptor.Descriptor(
+  name='GetValResponse',
+  full_name='raft.GetValResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='success', full_name='raft.GetValResponse.success', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='raft.GetValResponse.value', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=821,
+  serialized_end=869,
+)
+
+
+_EMPTYMESSAGE = _descriptor.Descriptor(
+  name='EmptyMessage',
+  full_name='raft.EmptyMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=871,
+  serialized_end=885,
+)
+
+_APPENDENTRIESMESSAGE.fields_by_name['logEntries'].message_type = _LOGENTRY
+_LOGENTRY.fields_by_name['command'].message_type = _COMMANDMESSAGE
+DESCRIPTOR.message_types_by_name['AppendEntriesMessage'] = _APPENDENTRIESMESSAGE
+DESCRIPTOR.message_types_by_name['LogEntry'] = _LOGENTRY
+DESCRIPTOR.message_types_by_name['CommandMessage'] = _COMMANDMESSAGE
+DESCRIPTOR.message_types_by_name['AppendEntriesResponse'] = _APPENDENTRIESRESPONSE
+DESCRIPTOR.message_types_by_name['RequestVoteMessage'] = _REQUESTVOTEMESSAGE
+DESCRIPTOR.message_types_by_name['RequestVoteResponse'] = _REQUESTVOTERESPONSE
+DESCRIPTOR.message_types_by_name['GetLeaderResponse'] = _GETLEADERRESPONSE
+DESCRIPTOR.message_types_by_name['SetKVMessage'] = _SETKVMESSAGE
+DESCRIPTOR.message_types_by_name['GetValMessage'] = _GETVALMESSAGE
+DESCRIPTOR.message_types_by_name['SetKVResponse'] = _SETKVRESPONSE
+DESCRIPTOR.message_types_by_name['GetValResponse'] = _GETVALRESPONSE
+DESCRIPTOR.message_types_by_name['EmptyMessage'] = _EMPTYMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-AppendEntriesRequest = _reflection.GeneratedProtocolMessageType('AppendEntriesRequest', (_message.Message,), {
-  'DESCRIPTOR' : _APPENDENTRIESREQUEST,
+AppendEntriesMessage = _reflection.GeneratedProtocolMessageType('AppendEntriesMessage', (_message.Message,), {
+  'DESCRIPTOR' : _APPENDENTRIESMESSAGE,
   '__module__' : 'raft_pb2'
-  # @@protoc_insertion_point(class_scope:raft.AppendEntriesRequest)
+  # @@protoc_insertion_point(class_scope:raft.AppendEntriesMessage)
   })
-_sym_db.RegisterMessage(AppendEntriesRequest)
+_sym_db.RegisterMessage(AppendEntriesMessage)
 
-AppendEntriesReply = _reflection.GeneratedProtocolMessageType('AppendEntriesReply', (_message.Message,), {
-  'DESCRIPTOR' : _APPENDENTRIESREPLY,
+LogEntry = _reflection.GeneratedProtocolMessageType('LogEntry', (_message.Message,), {
+  'DESCRIPTOR' : _LOGENTRY,
   '__module__' : 'raft_pb2'
-  # @@protoc_insertion_point(class_scope:raft.AppendEntriesReply)
+  # @@protoc_insertion_point(class_scope:raft.LogEntry)
   })
-_sym_db.RegisterMessage(AppendEntriesReply)
+_sym_db.RegisterMessage(LogEntry)
 
-VoteRequest = _reflection.GeneratedProtocolMessageType('VoteRequest', (_message.Message,), {
-  'DESCRIPTOR' : _VOTEREQUEST,
+CommandMessage = _reflection.GeneratedProtocolMessageType('CommandMessage', (_message.Message,), {
+  'DESCRIPTOR' : _COMMANDMESSAGE,
   '__module__' : 'raft_pb2'
-  # @@protoc_insertion_point(class_scope:raft.VoteRequest)
+  # @@protoc_insertion_point(class_scope:raft.CommandMessage)
   })
-_sym_db.RegisterMessage(VoteRequest)
+_sym_db.RegisterMessage(CommandMessage)
 
-VoteReply = _reflection.GeneratedProtocolMessageType('VoteReply', (_message.Message,), {
-  'DESCRIPTOR' : _VOTEREPLY,
+AppendEntriesResponse = _reflection.GeneratedProtocolMessageType('AppendEntriesResponse', (_message.Message,), {
+  'DESCRIPTOR' : _APPENDENTRIESRESPONSE,
   '__module__' : 'raft_pb2'
-  # @@protoc_insertion_point(class_scope:raft.VoteReply)
+  # @@protoc_insertion_point(class_scope:raft.AppendEntriesResponse)
   })
-_sym_db.RegisterMessage(VoteReply)
+_sym_db.RegisterMessage(AppendEntriesResponse)
 
-SubmitRequest = _reflection.GeneratedProtocolMessageType('SubmitRequest', (_message.Message,), {
-  'DESCRIPTOR' : _SUBMITREQUEST,
+RequestVoteMessage = _reflection.GeneratedProtocolMessageType('RequestVoteMessage', (_message.Message,), {
+  'DESCRIPTOR' : _REQUESTVOTEMESSAGE,
   '__module__' : 'raft_pb2'
-  # @@protoc_insertion_point(class_scope:raft.SubmitRequest)
+  # @@protoc_insertion_point(class_scope:raft.RequestVoteMessage)
   })
-_sym_db.RegisterMessage(SubmitRequest)
+_sym_db.RegisterMessage(RequestVoteMessage)
 
-SubmitReply = _reflection.GeneratedProtocolMessageType('SubmitReply', (_message.Message,), {
-  'DESCRIPTOR' : _SUBMITREPLY,
+RequestVoteResponse = _reflection.GeneratedProtocolMessageType('RequestVoteResponse', (_message.Message,), {
+  'DESCRIPTOR' : _REQUESTVOTERESPONSE,
   '__module__' : 'raft_pb2'
-  # @@protoc_insertion_point(class_scope:raft.SubmitReply)
+  # @@protoc_insertion_point(class_scope:raft.RequestVoteResponse)
   })
-_sym_db.RegisterMessage(SubmitReply)
+_sym_db.RegisterMessage(RequestVoteResponse)
+
+GetLeaderResponse = _reflection.GeneratedProtocolMessageType('GetLeaderResponse', (_message.Message,), {
+  'DESCRIPTOR' : _GETLEADERRESPONSE,
+  '__module__' : 'raft_pb2'
+  # @@protoc_insertion_point(class_scope:raft.GetLeaderResponse)
+  })
+_sym_db.RegisterMessage(GetLeaderResponse)
+
+SetKVMessage = _reflection.GeneratedProtocolMessageType('SetKVMessage', (_message.Message,), {
+  'DESCRIPTOR' : _SETKVMESSAGE,
+  '__module__' : 'raft_pb2'
+  # @@protoc_insertion_point(class_scope:raft.SetKVMessage)
+  })
+_sym_db.RegisterMessage(SetKVMessage)
+
+GetValMessage = _reflection.GeneratedProtocolMessageType('GetValMessage', (_message.Message,), {
+  'DESCRIPTOR' : _GETVALMESSAGE,
+  '__module__' : 'raft_pb2'
+  # @@protoc_insertion_point(class_scope:raft.GetValMessage)
+  })
+_sym_db.RegisterMessage(GetValMessage)
+
+SetKVResponse = _reflection.GeneratedProtocolMessageType('SetKVResponse', (_message.Message,), {
+  'DESCRIPTOR' : _SETKVRESPONSE,
+  '__module__' : 'raft_pb2'
+  # @@protoc_insertion_point(class_scope:raft.SetKVResponse)
+  })
+_sym_db.RegisterMessage(SetKVResponse)
+
+GetValResponse = _reflection.GeneratedProtocolMessageType('GetValResponse', (_message.Message,), {
+  'DESCRIPTOR' : _GETVALRESPONSE,
+  '__module__' : 'raft_pb2'
+  # @@protoc_insertion_point(class_scope:raft.GetValResponse)
+  })
+_sym_db.RegisterMessage(GetValResponse)
+
+EmptyMessage = _reflection.GeneratedProtocolMessageType('EmptyMessage', (_message.Message,), {
+  'DESCRIPTOR' : _EMPTYMESSAGE,
+  '__module__' : 'raft_pb2'
+  # @@protoc_insertion_point(class_scope:raft.EmptyMessage)
+  })
+_sym_db.RegisterMessage(EmptyMessage)
 
 
 
@@ -380,16 +657,16 @@ _RAFT = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=588,
-  serialized_end=768,
+  serialized_start=888,
+  serialized_end=1199,
   methods=[
   _descriptor.MethodDescriptor(
     name='AppendEntries',
     full_name='raft.Raft.AppendEntries',
     index=0,
     containing_service=None,
-    input_type=_APPENDENTRIESREQUEST,
-    output_type=_APPENDENTRIESREPLY,
+    input_type=_APPENDENTRIESMESSAGE,
+    output_type=_APPENDENTRIESRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),
@@ -398,18 +675,38 @@ _RAFT = _descriptor.ServiceDescriptor(
     full_name='raft.Raft.RequestVote',
     index=1,
     containing_service=None,
-    input_type=_VOTEREQUEST,
-    output_type=_VOTEREPLY,
+    input_type=_REQUESTVOTEMESSAGE,
+    output_type=_REQUESTVOTERESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),
   _descriptor.MethodDescriptor(
-    name='Submit',
-    full_name='raft.Raft.Submit',
+    name='GetLeader',
+    full_name='raft.Raft.GetLeader',
     index=2,
     containing_service=None,
-    input_type=_SUBMITREQUEST,
-    output_type=_SUBMITREPLY,
+    input_type=_EMPTYMESSAGE,
+    output_type=_GETLEADERRESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='SetKV',
+    full_name='raft.Raft.SetKV',
+    index=3,
+    containing_service=None,
+    input_type=_SETKVMESSAGE,
+    output_type=_SETKVRESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='GetVal',
+    full_name='raft.Raft.GetVal',
+    index=4,
+    containing_service=None,
+    input_type=_GETVALMESSAGE,
+    output_type=_GETVALRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

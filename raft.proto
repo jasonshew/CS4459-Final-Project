@@ -2,48 +2,79 @@ syntax = "proto3";
 
 package raft;
 
-message AppendEntriesRequest {
-    int32 requester_id = 1;
-    int32 current_term = 2;
-    int64 last_log_index = 4;
-    int32 last_log_term = 5;
-    repeated string op_entries = 6;
-    int32 leader_commit_index = 7;
-
+message AppendEntriesMessage {
+  int32 leaderID = 1;
+  int32 currentTerm = 2;
+  int64 lastLogIndex = 3;
+  int32 lastLogTerm = 4;
+  repeated LogEntry logEntries = 5;
+  int32 leaderCommitIndex = 6;
 }
 
-message AppendEntriesReply {
-    int32 replier_id = 1;
-    int32 current_term = 2;
-    bool success = 3;
+message LogEntry {
+  int64 index = 1;
+  int32 term = 2;
+  CommandMessage command = 3;
 }
 
-message VoteRequest{
-    int32 requester_id = 1;
-    int32 current_term = 2;
-    int64 last_log_index = 3;
-    int32 last_log_term = 4;
+message CommandMessage {
+  string operation = 1;
+  string key = 2;
+  string value = 3;
 }
 
-message VoteReply{
-    int32 replier_id = 1;
-    int32 current_term = 2;
-    int64 last_log_index = 3;
-    int32 last_log_term = 4;
-    bool vote_granted = 5;
+message AppendEntriesResponse {
+  int32 followerID = 1;
+  int32 currentTerm = 2;
+  bool success = 3;
 }
 
-message SubmitRequest{
-  int32 requester_id = 1;
+message RequestVoteMessage{
+  int32 candidateID = 1;
+  int32 currentTerm = 2;
+  int64 lastLogIndex = 3;
+  int32 lastLogTerm = 4;
 }
 
-message SubmitReply{
-  int32 replier_id = 1;
-  string message = 2;
+message RequestVoteResponse{
+  int32 followerID = 1;
+  int32 currentTerm = 2;
+  int64 lastLogIndex = 3;
+  int32 lastLogTerm = 4;
+  bool voteGranted = 5;
 }
+
+message GetLeaderResponse {
+  int32 leaderID = 1;
+  string leaderAddress = 2;
+}
+
+message SetKVMessage {
+  string key = 1;
+  string value = 2;
+}
+
+message GetValMessage {
+  string key = 1;
+}
+
+message SetKVResponse {
+  bool success = 1;
+}
+
+message GetValResponse {
+  bool success = 1;
+  string value = 2;
+}
+
+
+
+message EmptyMessage {}
 
 service Raft{
-    rpc AppendEntries(stream AppendEntriesRequest) returns (AppendEntriesReply);
-    rpc RequestVote(VoteRequest) returns (VoteReply);
-    rpc Submit(SubmitRequest) returns (SubmitReply);
+  rpc AppendEntries(stream AppendEntriesMessage) returns (AppendEntriesResponse);
+  rpc RequestVote(RequestVoteMessage) returns (RequestVoteResponse);
+  rpc GetLeader(EmptyMessage) returns (GetLeaderResponse);
+  rpc SetKV(SetKVMessage) returns (SetKVResponse);
+  rpc GetVal(GetValMessage) returns (GetValResponse);
 }
