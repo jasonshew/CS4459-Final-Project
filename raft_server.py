@@ -93,7 +93,10 @@ def register_this_server():
         print("Server directory not found. Registration failed.")
         sys.exit(0)
     except PermissionError:
-        print("Permission denied. Check if the file is read-only. Registration failed.")
+        print("Permission denied. Registration failed.")
+        sys.exit(0)
+    except Exception:
+        print("Registration failed.")
         sys.exit(0)
 
 
@@ -104,7 +107,7 @@ def verify_server_log():
             print("Server logfile located: " + str(len(logfile["server_log"])) + " entries")
     except FileNotFoundError:
         with open(SERVER_LOG_FILE, 'w') as file:
-            initialized_log = {"server_log": []}
+            initialized_log = [{}]
             json.dump(initialized_log, file, sort_keys=False)
             print("Server logfile created successfully.")
 
@@ -143,7 +146,7 @@ def replicateLog(new_log):
                 TERM_NUMBER = response.currentTerm
                 SERVER_STATUS = ServerState.Follower
 
-                print(f"I am follower. Term: {TERM_NUMBER}")
+                print(f"This server #{SERVER_ID} is a Follower. (Term: {TERM_NUMBER})")
 
                 TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
                 TIMER_THREAD.start()
@@ -251,7 +254,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
                 SERVER_LOG.append({'index': log_entry.index, 'term': log_entry.term,
                                    'command': (log_command.operation, log_command.key, log_command.value)})
 
-                COMMIT_INDEX = min(request.leaderCommit, SERVER_LOG[-1]['index'])
+                COMMIT_INDEX = min(request.leaderCommitIndex, SERVER_LOG[-1]['index'])
 
                 print('Server log updated')
                 print(SERVER_LOG)
@@ -367,7 +370,7 @@ def start_election():
     TERM_NUMBER += 1
     votes = 1
     VOTED = SERVER_ID
-    print(f"This server #{SERVER_ID} (Status: Candidate / Current Term: {TERM_NUMBER}) voted for Server #{SERVER_ID}")
+    print(f"This server #{SERVER_ID} voted for itself (Status: Candidate / Current Term: {TERM_NUMBER})")
 
     # Start collecting votes
     for key in list(SERVER_DIRECTORY.keys()):
@@ -399,7 +402,7 @@ def start_election():
     else:
         if votes == 1:
             print('1 vote received')
-        if votes > 1:
+        elif votes > 1:
             print(f'{votes} votes received')
 
         majority = len(list(SERVER_DIRECTORY.keys())) / 2
@@ -441,9 +444,9 @@ def serve():
         grpc_server.start()
         TIMER_THREAD.start()
 
-        print("This server #{} is up on {}:{} as a Follower (Current Term: {})\n".format(SERVER_ID, TERM_NUMBER,
+        print("This server #{} is up on {}:{} as a Follower (Current Term: {})\n".format(SERVER_ID,
                                                                                          SERVER_ADDRESS,
-                                                                                         SERVER_PORT))
+                                                                                         SERVER_PORT, TERM_NUMBER))
 
         grpc_server.wait_for_termination()
     except KeyboardInterrupt:
