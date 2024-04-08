@@ -121,25 +121,25 @@ def replicateLog(new_log):
     replication_success_num = 0
     for key in list(SERVER_DIRECTORY.keys()):
         try:
-            with grpc.insecure_channel(SERVER_DIRECTORY[key]) as channel:
-                stub = raft_pb2_grpc.RaftStub(channel)
+            channel = grpc.insecure_channel(SERVER_DIRECTORY[key])
+            stub = raft_pb2_grpc.RaftStub(channel)
 
-                message = raft_pb2.AppendEntriesMessage()
-                message.currentTerm = TERM_NUMBER
-                message.leaderID = SERVER_ID
-                message.lastLogIndex = MATCH_INDEX[key]
-                message.lastLogTerm = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[MATCH_INDEX[key]]['term']
-                message.leaderCommitIndex = COMMIT_INDEX
+            message = raft_pb2.AppendEntriesMessage()
+            message.currentTerm = TERM_NUMBER
+            message.leaderID = SERVER_ID
+            message.lastLogIndex = MATCH_INDEX[key]
+            message.lastLogTerm = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[MATCH_INDEX[key]]['term']
+            message.leaderCommitIndex = COMMIT_INDEX
 
-                command_message = raft_pb2.CommandMessage(operation=new_log['command'][0], key=new_log['command'][1],
-                                                          value=new_log['command'][2])
-                log_entry = raft_pb2.LogEntry(index=new_log['index'], term=new_log['term'], command=command_message)
+            command_message = raft_pb2.CommandMessage(operation=new_log['command'][0], key=new_log['command'][1],
+                                                      value=new_log['command'][2])
+            log_entry = raft_pb2.LogEntry(index=new_log['index'], term=new_log['term'], command=command_message)
 
-                message.logEntries.append(log_entry)
+            message.logEntries.append(log_entry)
 
-                response = stub.AppendEntries(message)
+            response = stub.AppendEntries(message)
 
-                print(response)
+            print(response)
 
             if response.currentTerm > TERM_NUMBER:
                 TIMER_THREAD.cancel()
@@ -196,10 +196,10 @@ class Raft(raft_pb2_grpc.RaftServicer):
 
                 return raft_pb2.SetKeyValResponse(success=True)
             else:  # Follower case
-                with grpc.insecure_channel(SERVER_DIRECTORY[LEADER]) as leader_channel:
-                    leader_stub = raft_pb2_grpc.RaftStub(leader_channel)
-                    message = raft_pb2.SetKeyValMessage(key=request.key, value=request.value)
-                    return leader_stub.SetKeyVal(message)
+                leader_channel = grpc.insecure_channel(SERVER_DIRECTORY[int(LEADER)])
+                leader_stub = raft_pb2_grpc.RaftStub(leader_channel)
+                message = raft_pb2.SetKeyValMessage(key=request.key, value=request.value)
+                return leader_stub.SetKeyVal(message)
         except Exception as Error:
             return raft_pb2.SetKeyValResponse(success=False)
 
@@ -226,7 +226,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
             if LEADER == SERVER_ID:
                 address = SERVER_ADDRESS
             else:
-                address = SERVER_DIRECTORY[LEADER]
+                address = SERVER_DIRECTORY[int(LEADER)]
 
         print(f'{current_leader} {address}')
 
@@ -317,27 +317,28 @@ def send_heartbeat():
 
     for key in list(SERVER_DIRECTORY.keys()):
         try:
-            with grpc.insecure_channel(SERVER_DIRECTORY[key]) as channel:
-                stub = raft_pb2_grpc.RaftStub(channel)
+            channel = grpc.insecure_channel(SERVER_DIRECTORY[key])
+            stub = raft_pb2_grpc.RaftStub(channel)
 
-                message = raft_pb2.AppendEntriesMessage()
-                message.leaderID = SERVER_ID
-                message.currentTerm = TERM_NUMBER
-                message.lastLogIndex = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[-1]['index']
-                message.lastLogTerm = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[-1]['term']
-                message.leaderCommitIndex = COMMIT_INDEX
-                response = stub.AppendEntries(message)
+            message = raft_pb2.AppendEntriesMessage()
+            message.leaderID = SERVER_ID
+            message.currentTerm = TERM_NUMBER
+            message.lastLogIndex = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[-1]['index']
+            message.lastLogTerm = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[-1]['term']
+            message.leaderCommitIndex = COMMIT_INDEX
+            response = stub.AppendEntries(message)
+            channel.close()
 
-                if response.currentTerm > TERM_NUMBER:
-                    TIMER_THREAD.cancel()
-                    TERM_NUMBER = response.currentTerm
-                    SERVER_STATUS = ServerState.Follower
+            if response.currentTerm > TERM_NUMBER:
+                TIMER_THREAD.cancel()
+                TERM_NUMBER = response.currentTerm
+                SERVER_STATUS = ServerState.Follower
 
-                    print(f"This server #{SERVER_ID} has become a Follower (Current Term: {TERM_NUMBER})")
+                print(f"This server #{SERVER_ID} has become a Follower (Current Term: {TERM_NUMBER})")
 
-                    TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
-                    TIMER_THREAD.start()
-                    break
+                TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
+                TIMER_THREAD.start()
+                break
 
         except grpc.RpcError:
             continue
@@ -356,7 +357,7 @@ def generate_random_timeout():
 def start_election():
     global SERVER_STATUS, SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, TIMER_THREAD, VOTED, LEADER, ELECTION_TIMEOUT, IS_ELECTION_FINISHED
 
-    if LEADER is None:
+    if LEADER is None or int(LEADER) < 0:
         print("Leader Server not discovered yet")
     else:
         print(f'Leader Server #{LEADER} went down')
@@ -378,11 +379,11 @@ def start_election():
             if IS_ELECTION_FINISHED:  # Election finished due to timer is up
                 break
 
-            with grpc.insecure_channel(SERVER_DIRECTORY[key]) as channel:
-                stub = raft_pb2_grpc.RaftStub(channel)
+            channel = grpc.insecure_channel(SERVER_DIRECTORY[key])
+            stub = raft_pb2_grpc.RaftStub(channel)
 
-                message = raft_pb2.RequestVoteMessage(candidateID=SERVER_ID, currentTerm=TERM_NUMBER)
-                response = stub.RequestVote(message)
+            message = raft_pb2.RequestVoteMessage(candidateID=SERVER_ID, currentTerm=TERM_NUMBER)
+            response = stub.RequestVote(message)
 
             if response.voteGranted:
                 votes += 1

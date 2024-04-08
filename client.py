@@ -19,6 +19,9 @@ SERVER_PORT = None
 SERVER_DIRECTORY = {}
 SERVER_DIRECTORY_FILE = 'server_directory.json'
 CLIENT_LOG_FILE = 'client.txt'
+STUB = None
+SET = "SET"
+GET = "GET"
 
 QUIT_SYMBOL = "//"
 CANCEL_SYMBOL = ".."
@@ -28,7 +31,7 @@ CANCEL_SYMBOL = ".."
 # This could be a direct query to a known service discovery mechanism or a stored value updated on notifications
 
 def discover_server():
-    global SERVER_ID, SERVER_ADDRESS, SERVER_PORT, SERVER_DIRECTORY_FILE
+    global SERVER_ID, SERVER_ADDRESS, SERVER_PORT, SERVER_DIRECTORY_FILE, STUB
     if len(sys.argv) == 3:
         SERVER_DIRECTORY_FILE = sys.argv[2]
     dirname = os.path.dirname(__file__)
@@ -51,8 +54,8 @@ def discover_server():
     for key, val in SERVER_DIRECTORY.items():
         try:
             channel = grpc.insecure_channel(f'{val}')
-            stub = raft_pb2_grpc.RaftStub(channel)
-            server_response = stub.GetLeader(raft_pb2.EmptyMessage())
+            STUB = raft_pb2_grpc.RaftStub(channel)
+            server_response = STUB.GetLeader(raft_pb2.EmptyMessage())
             SERVER_ID = int(server_response.leaderID)
             SERVER_ADDRESS = server_response.leaderAddress
             SERVER_PORT = int(SERVER_ADDRESS.split(":")[1])
@@ -60,19 +63,20 @@ def discover_server():
             if int(key) == SERVER_ID:
                 this_server_is_leader = True
                 print("Connected to service successfully.")
-                return stub
         except Exception:
             continue
+        except KeyboardInterrupt:
+            print("\nGOODBYE!")
+            sys.exit(0)
 
     if SERVER_ID is None or SERVER_ID == -1:
         return None
 
     elif not this_server_is_leader:
         channel = grpc.insecure_channel(f'{SERVER_ADDRESS}:{SERVER_PORT}')
-        stub = raft_pb2_grpc.RaftStub(channel)
-        if stub is not None:
+        STUB = raft_pb2_grpc.RaftStub(channel)
+        if STUB is not None:
             print("Connected to service successfully.")
-        return stub
 
 
 def print_failure_msg():
@@ -81,57 +85,130 @@ def print_failure_msg():
           "PLEASE QUIT OR TRY AGAIN LATER\n")
 
 
-def run():
-    global SERVER_ADDRESS, SERVER_PORT
-    stub = discover_server()
+def get_input_product_code():
+    while True:
+        try:
+            product_code = input('Enter PRODUCT CODE or "' + QUIT_SYMBOL + '" to quit: ').strip()
+            if not product_code or product_code.isspace():
+                print('Product code cannot be empty. Try again.')
+                continue
+            if ' ' in product_code:
+                print('Product code cannot contain any spaces. Try again.')
+                continue
+            if product_code == QUIT_SYMBOL:
+                print("\nGOODBYE!")
+                sys.exit(0)
+            if not product_code.isdigit():
+                print('Product code should only contain numbers. Try again.')
+                continue
+            return product_code
+        except Exception:
+            return None
+        except KeyboardInterrupt:
+            print("\nGOODBYE!")
+            sys.exit(0)
+
+
+def get_input_product_name():
+    while True:
+        try:
+            product_name = input(
+                'Enter PRODUCT NAME, "' + CANCEL_SYMBOL + '" to cancel, or "' + QUIT_SYMBOL + '" to quit: ').strip()
+            if not product_name or product_name.isspace():
+                print('PRODUCT NAME cannot be empty. Try again.')
+                continue
+            if product_name == CANCEL_SYMBOL:
+                os.execl(sys.executable, sys.executable, *sys.argv)
+            if product_name == QUIT_SYMBOL:
+                print("\nGOODBYE!")
+                sys.exit(0)
+            return product_name
+        except Exception:
+            return None
+        except KeyboardInterrupt:
+            print("\nGOODBYE!")
+            sys.exit(0)
+
+
+def process_user_command():
+    global SERVER_ADDRESS, SERVER_PORT, STUB
+    print("THANKS FOR USING DIM (DISTRIBUTED INVENTORY MANAGEMENT) SERVICE")
     try:
         while True:
-            key_to_write = input('Enter <key> or "' + QUIT_SYMBOL + '" to quit: ').strip()
-            if not key_to_write or key_to_write.isspace():
-                print('<key> cannot be empty. Try again.')
-                continue
-            if ' ' in key_to_write:
-                print('<key> cannot contain any spaces. Try again.')
-                continue
-            if key_to_write == QUIT_SYMBOL:
+            print("[R] Register a Product")
+            print("[S] Search for a Product")
+            print("[Q] Quit")
+            user_choice = input("Select an operation: ")
+            user_choice = user_choice.strip().upper()
+
+            if user_choice == "Q":
                 print("\nGOODBYE!")
                 sys.exit(0)
-            if not key_to_write.isalnum():
-                print('<key> should only contain letters and/or numbers. Try again.')
+            elif user_choice == "R":
+                product_code = get_input_product_code()
+                if product_code:
+                    product_name = get_input_product_name()
+                    if product_name:
+                        return SET, product_code, product_name
+            elif user_choice == "S":
+                product_code = get_input_product_code()
+                return GET, product_code
+            else:
+                print("Invalid input. Please try again.\n")
                 continue
-            break
-        while True:
-            value_to_write = input(
-                'Enter <value>, "' + CANCEL_SYMBOL + '" to cancel, or "' + QUIT_SYMBOL + '" to quit: ').strip()
-            if not value_to_write or value_to_write.isspace():
-                print('<value> cannot be empty. Try again.')
-                continue
-            if value_to_write == CANCEL_SYMBOL:
-                os.execl(sys.executable, sys.executable, *sys.argv)
-            if value_to_write == QUIT_SYMBOL:
-                print("\nGOODBYE!")
-                sys.exit(0)
-            break
-        data_kv_pair = {key_to_write: value_to_write}
     except KeyboardInterrupt:
         print("\nGOODBYE!")
         sys.exit(0)
 
-    if stub is not None:
-        try:
-            for k, v in data_kv_pair.items():
-                server_response = stub.SetKeyVal(
-                    raft_pb2.SetKeyValMessage(
-                        key=k,
-                        value=v
+
+def run():
+    user_command = process_user_command()
+    if user_command[0] == SET:
+        data_kv_pair = {user_command[1]: user_command[2]}
+        if STUB is not None:
+            try:
+                for k, v in data_kv_pair.items():
+                    server_response = STUB.SetKeyVal(
+                        raft_pb2.SetKeyValMessage(
+                            key=k,
+                            value=v
+                        ))
+                    if server_response.success:
+                        with open(CLIENT_LOG_FILE, 'a') as file:
+                            file.write(k + ' ' + v + '\n')
+                            print("\nServer has successfully processed your request\n")
+                            print(f'Product Code: {k} | Product Name: {v} – Registered')
+                    else:
+                        print_failure_msg()
+            except grpc.RpcError as e:
+                print_failure_msg()
+                print(e)
+            except Exception:
+                print_failure_msg()
+            except KeyboardInterrupt:
+                print("\nGOODBYE!")
+                sys.exit(0)
+        print_failure_msg()
+    elif user_command[0] == GET:
+        data_key = user_command[1]
+        if STUB is not None:
+            try:
+                server_response = STUB.GetVal(
+                    raft_pb2.GetValMessage(
+                        key=data_key,
                     ))
-                if server_response.success:
-                    with open(CLIENT_LOG_FILE, 'a') as file:
-                        file.write(k + ' ' + v + '\n')
-                        print("\nServer has successfully processed your request\n")
-        except grpc.RpcError as e:
+                if server_response.success and server_response.value:
+                    print(f"\nThe product you are looking for is {server_response.value} (Product Code: {data_key})\n")
+                else:
+                    print(f"\nThe product you are looking for doesn't exist")
+            except grpc.RpcError as e:
+                print_failure_msg()
+                print(e)
+            except KeyboardInterrupt:
+                print("\nGOODBYE!")
+                sys.exit(0)
+        else:
             print_failure_msg()
-            print(e)
     else:
         print_failure_msg()
 
