@@ -31,6 +31,7 @@ COMMIT_INDEX = 0
 LAST_APPLIED = 0
 NEXT_INDEX = {}
 MATCH_INDEX = {}
+PEER_SERVERS = {}
 
 
 class ServerState(Enum):
@@ -40,7 +41,7 @@ class ServerState(Enum):
 
 
 def config_server():
-    global SERVER_ID, SERVER_LOG_FILE, TERM_NUMBER, SERVER_ADDRESS, SERVER_PORT, PEER_SERVERS, ELECTION_TIMEOUT, SERVER_CONFIG_FILE, SERVER_DIRECTORY_FILE
+    global SERVER_ID, SERVER_LOG_FILE, TERM_NUMBER, SERVER_ADDRESS, SERVER_PORT, PEER_SERVERS, ELECTION_TIMEOUT, SERVER_CONFIG_FILE, SERVER_DIRECTORY_FILE, PEER_SERVERS
     if len(sys.argv) == 3:
         SERVER_CONFIG_FILE = sys.argv[1]
         SERVER_DIRECTORY_FILE = sys.argv[2]
@@ -59,16 +60,20 @@ def config_server():
                     {each_server["server_id"]: each_server["address"] + ":" + str(each_server["port"])})
                 if each_server["server_id"] != server_info["server_id"]:
                     server_info["peers"].append(
-                        {"server_id": each_server["server_id"], "address": each_server["address"],
-                         "port": each_server["port"]})
+                        {"server_id": int(each_server["server_id"]), "address": each_server["address"],
+                         "port": int(each_server["port"])})
+                    PEER_SERVERS.update(
+                        {int(each_server["server_id"]): f"{each_server['address']}:{each_server['port']}"})
+                    MATCH_INDEX[int(each_server["server_id"])] = 0
+                    NEXT_INDEX[int(each_server["server_id"])] = 0
                     with open(SERVER_CONFIG_FILE, 'w') as file_3:
                         json.dump(server_info, file_3, sort_keys=False, indent=4)
     except Exception:
         print("Server configuration file or server directory not found. Check your local filesystem and try again.")
         sys.exit(0)
-    SERVER_ID = server_info["server_id"]
+    SERVER_ID = int(server_info["server_id"])
     SERVER_ADDRESS = server_info["address"]
-    SERVER_PORT = server_info["port"]
+    SERVER_PORT = int(server_info["port"])
     SERVER_LOG_FILE = f'server_{SERVER_ID}_log.json'
 
 
@@ -82,7 +87,7 @@ def register_this_server():
         with open(SERVER_DIRECTORY_FILE, 'r') as file_1:
             servers_list = json.load(file_1)
             for server in servers_list:
-                if server["server_id"] == SERVER_ID:
+                if server["server_id"] == str(SERVER_ID):
                     print("This server is already in the server directory.")
                     return
             servers_list.append(the_server)
@@ -105,6 +110,7 @@ def verify_server_log():
         with open(SERVER_LOG_FILE, 'r') as file:
             logfile = json.load(file)
             print("Server logfile located: " + str(len(logfile["server_log"])) + " entries")
+
     except FileNotFoundError:
         with open(SERVER_LOG_FILE, 'w') as file:
             initialized_log = [{}]
@@ -119,9 +125,9 @@ def replicateLog(new_log):
     print('Log replication', new_log)
 
     replication_success_num = 0
-    for key in list(SERVER_DIRECTORY.keys()):
+    for key in list(PEER_SERVERS.keys()):
         try:
-            channel = grpc.insecure_channel(SERVER_DIRECTORY[key])
+            channel = grpc.insecure_channel(PEER_SERVERS[key])
             stub = raft_pb2_grpc.RaftStub(channel)
 
             message = raft_pb2.AppendEntriesMessage()
@@ -172,7 +178,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
         pass
 
     def SetKeyVal(self, request, context):
-        global SERVER_LOG, COMMIT_INDEX, LAST_APPLIED, SERVER_STATUS, TERM_NUMBER, LEADER, SERVER_DIRECTORY
+        global SERVER_LOG, COMMIT_INDEX, LAST_APPLIED, SERVER_STATUS, TERM_NUMBER, LEADER, SERVER_DIRECTORY, PEER_SERVERS
         try:
             if SERVER_STATUS.name == 'Candidate':
                 return raft_pb2.SetKeyValResponse(success=False)
@@ -196,7 +202,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
 
                 return raft_pb2.SetKeyValResponse(success=True)
             else:  # Follower case
-                leader_channel = grpc.insecure_channel(SERVER_DIRECTORY[int(LEADER)])
+                leader_channel = grpc.insecure_channel(PEER_SERVERS[int(LEADER)])
                 leader_stub = raft_pb2_grpc.RaftStub(leader_channel)
                 message = raft_pb2.SetKeyValMessage(key=request.key, value=request.value)
                 return leader_stub.SetKeyVal(message)
@@ -216,7 +222,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
         return raft_pb2.GetValResponse(success=True, value=target_value)
 
     def GetLeader(self, request, context):
-        global LEADER, SERVER_DIRECTORY, SERVER_ID, SERVER_ADDRESS
+        global LEADER, SERVER_DIRECTORY, SERVER_ID, SERVER_ADDRESS, SERVER_PORT, PEER_SERVERS
         current_leader = LEADER
 
         if LEADER is None:
@@ -224,9 +230,9 @@ class Raft(raft_pb2_grpc.RaftServicer):
             address = ''
         else:
             if LEADER == SERVER_ID:
-                address = SERVER_ADDRESS
+                address = f'{SERVER_ADDRESS}:{SERVER_PORT}'
             else:
-                address = SERVER_DIRECTORY[int(LEADER)]
+                address = PEER_SERVERS[int(LEADER)]
 
         print(f'{current_leader} {address}')
 
@@ -247,6 +253,8 @@ class Raft(raft_pb2_grpc.RaftServicer):
             # Write SERVER_LOG
             if SERVER_LOG[request.lastLogIndex] is None and len(SERVER_LOG) > 0:
                 heartbeat_success = False
+            elif request.logEntries is None:
+                heartbeat_success = True
             else:
                 log_entry = request.logEntries[0]
                 log_command = log_entry.command
@@ -313,11 +321,12 @@ class Raft(raft_pb2_grpc.RaftServicer):
 
 
 def send_heartbeat():
-    global SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, TIMER_THREAD, SERVER_STATUS, ELECTION_TIMEOUT, COMMIT_INDEX, SERVER_LOG
+    global SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, TIMER_THREAD, SERVER_STATUS, ELECTION_TIMEOUT, COMMIT_INDEX, SERVER_LOG, PEER_SERVERS
 
-    for key in list(SERVER_DIRECTORY.keys()):
+    for key in list(PEER_SERVERS.keys()):
+
         try:
-            channel = grpc.insecure_channel(SERVER_DIRECTORY[key])
+            channel = grpc.insecure_channel(PEER_SERVERS[key])
             stub = raft_pb2_grpc.RaftStub(channel)
 
             message = raft_pb2.AppendEntriesMessage()
@@ -340,8 +349,11 @@ def send_heartbeat():
                 TIMER_THREAD.start()
                 break
 
-        except grpc.RpcError:
+        except grpc.RpcError as e:
+            print("An error occurred:", key, e)
             continue
+        except IndexError as e2:
+            print("Index error occurred:", key, e2)
 
 
 class RaftTimer(Timer):
@@ -355,9 +367,9 @@ def generate_random_timeout():
 
 
 def start_election():
-    global SERVER_STATUS, SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, TIMER_THREAD, VOTED, LEADER, ELECTION_TIMEOUT, IS_ELECTION_FINISHED
+    global SERVER_STATUS, SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, TIMER_THREAD, VOTED, LEADER, ELECTION_TIMEOUT, IS_ELECTION_FINISHED, PEER_SERVERS
 
-    if LEADER is None or int(LEADER) < 0:
+    if LEADER is None or int(LEADER) == -1:
         print("Leader Server not discovered yet")
     else:
         print(f'Leader Server #{LEADER} went down')
@@ -374,12 +386,12 @@ def start_election():
     print(f"This server #{SERVER_ID} voted for itself (Status: Candidate / Current Term: {TERM_NUMBER})")
 
     # Start collecting votes
-    for key in list(SERVER_DIRECTORY.keys()):
+    for key in list(PEER_SERVERS.keys()):
         try:
             if IS_ELECTION_FINISHED:  # Election finished due to timer is up
                 break
 
-            channel = grpc.insecure_channel(SERVER_DIRECTORY[key])
+            channel = grpc.insecure_channel(PEER_SERVERS[key])
             stub = raft_pb2_grpc.RaftStub(channel)
 
             message = raft_pb2.RequestVoteMessage(candidateID=SERVER_ID, currentTerm=TERM_NUMBER)
@@ -429,25 +441,23 @@ def stop_election():
 
 
 def serve():
-    global SERVER_STATUS, TIMER_THREAD, SERVER_ID, ELECTION_TIMEOUT, SERVER_ADDRESS, TERM_NUMBER, SERVER_DIRECTORY, MATCH_INDEX, NEXT_INDEX
+    global SERVER_STATUS, TIMER_THREAD, SERVER_ID, ELECTION_TIMEOUT, SERVER_ADDRESS, SERVER_PORT, TERM_NUMBER, SERVER_DIRECTORY, MATCH_INDEX, NEXT_INDEX, PEER_SERVERS
     SERVER_STATUS = ServerState.Follower
     ELECTION_TIMEOUT = generate_random_timeout()
 
     grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     raft_pb2_grpc.add_RaftServicer_to_server(Raft(), grpc_server)
-    grpc_server.add_insecure_port('[::]:' + str(SERVER_PORT))
-
-    MATCH_INDEX[SERVER_ID] = 0
-    NEXT_INDEX[SERVER_ID] = 0
+    grpc_server.add_insecure_port(f'{SERVER_ADDRESS}:{SERVER_PORT}')
 
     try:
         TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
         grpc_server.start()
         TIMER_THREAD.start()
 
-        print("This server #{} is up on {}:{} as a Follower (Current Term: {})\n".format(SERVER_ID,
-                                                                                         SERVER_ADDRESS,
-                                                                                         SERVER_PORT, TERM_NUMBER))
+        print("This server #{} is up on {}:{} as a {} (Current Term: {})\n".format(SERVER_ID,
+                                                                                   SERVER_ADDRESS,
+                                                                                   SERVER_PORT, SERVER_STATUS.name,
+                                                                                   TERM_NUMBER))
 
         grpc_server.wait_for_termination()
     except KeyboardInterrupt:
@@ -457,6 +467,6 @@ def serve():
 
 if __name__ == "__main__":
     config_server()
-    verify_server_log()
-    register_this_server()
+    # verify_server_log()
+    # register_this_server()
     serve()

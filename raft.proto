@@ -67,7 +67,7 @@ message CommandMessage {
 message EmptyMessage {}
 
 service Raft{
-  rpc AppendEntries(stream AppendEntriesMessage) returns (AppendEntriesResponse);
+  rpc AppendEntries(AppendEntriesMessage) returns (AppendEntriesResponse);
   rpc RequestVote(RequestVoteMessage) returns (RequestVoteResponse);
   rpc GetLeader(EmptyMessage) returns (GetLeaderResponse);
   rpc SetKeyVal(SetKeyValMessage) returns (SetKeyValResponse);

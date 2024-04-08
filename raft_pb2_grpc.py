@@ -14,7 +14,7 @@ class RaftStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.AppendEntries = channel.stream_unary(
+        self.AppendEntries = channel.unary_unary(
                 '/raft.Raft/AppendEntries',
                 request_serializer=raft__pb2.AppendEntriesMessage.SerializeToString,
                 response_deserializer=raft__pb2.AppendEntriesResponse.FromString,
@@ -44,7 +44,7 @@ class RaftStub(object):
 class RaftServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def AppendEntries(self, request_iterator, context):
+    def AppendEntries(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -77,7 +77,7 @@ class RaftServicer(object):
 
 def add_RaftServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'AppendEntries': grpc.stream_unary_rpc_method_handler(
+            'AppendEntries': grpc.unary_unary_rpc_method_handler(
                     servicer.AppendEntries,
                     request_deserializer=raft__pb2.AppendEntriesMessage.FromString,
                     response_serializer=raft__pb2.AppendEntriesResponse.SerializeToString,
@@ -113,7 +113,7 @@ class Raft(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def AppendEntries(request_iterator,
+    def AppendEntries(request,
             target,
             options=(),
             channel_credentials=None,
@@ -123,7 +123,7 @@ class Raft(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.stream_unary(request_iterator, target, '/raft.Raft/AppendEntries',
+        return grpc.experimental.unary_unary(request, target, '/raft.Raft/AppendEntries',
             raft__pb2.AppendEntriesMessage.SerializeToString,
             raft__pb2.AppendEntriesResponse.FromString,
             options, channel_credentials,
