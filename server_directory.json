@@ -1,5 +1,10 @@
 [
   {
+    "server_id": 10000,
+    "address": "localhost",
+    "port": 10000
+  },
+  {
     "server_id": 10001,
     "address": "localhost",
     "port": 50001
@@ -18,10 +23,5 @@
     "server_id": 10004,
     "address": "localhost",
     "port": 50004
-  },
-  {
-    "server_id": 9999,
-    "address": "localhost",
-    "port": 9999
   }
 ]
