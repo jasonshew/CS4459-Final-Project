@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\nraft.proto\x12\x04raft\"\xa7\x01\n\x14\x41ppendEntriesMessage\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x14\n\x0clastLogIndex\x18\x03 \x01(\x03\x12\x13\n\x0blastLogTerm\x18\x04 \x01(\x05\x12\"\n\nlogEntries\x18\x05 \x03(\x0b\x32\x0e.raft.LogEntry\x12\x19\n\x11leaderCommitIndex\x18\x06 \x01(\x05\"Q\n\x15\x41ppendEntriesResponse\x12\x12\n\nfollowerID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x0f\n\x07success\x18\x03 \x01(\x08\">\n\x12RequestVoteMessage\x12\x13\n\x0b\x63\x61ndidateID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\"?\n\x13RequestVoteResponse\x12\x13\n\x0b\x63urrentTerm\x18\x01 \x01(\x05\x12\x13\n\x0bvoteGranted\x18\x02 \x01(\x08\".\n\x10SetKeyValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"$\n\x11SetKeyValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x1c\n\rGetValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\"0\n\x0eGetValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\r\n\x05value\x18\x02 \x01(\t\"<\n\x11GetLeaderResponse\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x15\n\rleaderAddress\x18\x02 \x01(\t\"N\n\x08LogEntry\x12\r\n\x05index\x18\x01 \x01(\x03\x12\x0c\n\x04term\x18\x02 \x01(\x05\x12%\n\x07\x63ommand\x18\x03 \x01(\x0b\x32\x14.raft.CommandMessage\"?\n\x0e\x43ommandMessage\x12\x11\n\toperation\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12\r\n\x05value\x18\x03 \x01(\t\"\x0e\n\x0c\x45mptyMessage2\xc1\x02\n\x04Raft\x12H\n\rAppendEntries\x12\x1a.raft.AppendEntriesMessage\x1a\x1b.raft.AppendEntriesResponse\x12\x42\n\x0bRequestVote\x12\x18.raft.RequestVoteMessage\x1a\x19.raft.RequestVoteResponse\x12\x38\n\tGetLeader\x12\x12.raft.EmptyMessage\x1a\x17.raft.GetLeaderResponse\x12<\n\tSetKeyVal\x12\x16.raft.SetKeyValMessage\x1a\x17.raft.SetKeyValResponse\x12\x33\n\x06GetVal\x12\x13.raft.GetValMessage\x1a\x14.raft.GetValResponseb\x06proto3'
+  serialized_pb=b'\n\nraft.proto\x12\x04raft\"\xa7\x01\n\x14\x41ppendEntriesMessage\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x14\n\x0clastLogIndex\x18\x03 \x01(\x05\x12\x13\n\x0blastLogTerm\x18\x04 \x01(\x05\x12\"\n\nlogEntries\x18\x05 \x03(\x0b\x32\x0e.raft.LogEntry\x12\x19\n\x11leaderCommitIndex\x18\x06 \x01(\x05\"Q\n\x15\x41ppendEntriesResponse\x12\x12\n\nfollowerID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x0f\n\x07success\x18\x03 \x01(\x08\">\n\x12RequestVoteMessage\x12\x13\n\x0b\x63\x61ndidateID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\"?\n\x13RequestVoteResponse\x12\x13\n\x0b\x63urrentTerm\x18\x01 \x01(\x05\x12\x13\n\x0bvoteGranted\x18\x02 \x01(\x08\".\n\x10SetKeyValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"$\n\x11SetKeyValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x1c\n\rGetValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\"0\n\x0eGetValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\r\n\x05value\x18\x02 \x01(\t\"<\n\x11GetLeaderResponse\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x15\n\rleaderAddress\x18\x02 \x01(\t\"N\n\x08LogEntry\x12\r\n\x05index\x18\x01 \x01(\x05\x12\x0c\n\x04term\x18\x02 \x01(\x05\x12%\n\x07\x63ommand\x18\x03 \x01(\x0b\x32\x14.raft.CommandMessage\"?\n\x0e\x43ommandMessage\x12\x11\n\toperation\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12\r\n\x05value\x18\x03 \x01(\t\"\x0e\n\x0c\x45mptyMessage2\xc1\x02\n\x04Raft\x12H\n\rAppendEntries\x12\x1a.raft.AppendEntriesMessage\x1a\x1b.raft.AppendEntriesResponse\x12\x42\n\x0bRequestVote\x12\x18.raft.RequestVoteMessage\x1a\x19.raft.RequestVoteResponse\x12\x38\n\tGetLeader\x12\x12.raft.EmptyMessage\x1a\x17.raft.GetLeaderResponse\x12<\n\tSetKeyVal\x12\x16.raft.SetKeyValMessage\x1a\x17.raft.SetKeyValResponse\x12\x33\n\x06GetVal\x12\x13.raft.GetValMessage\x1a\x14.raft.GetValResponseb\x06proto3'
 )
 
 
@@ -49,7 +49,7 @@ _APPENDENTRIESMESSAGE = _descriptor.Descriptor(
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
       name='lastLogIndex', full_name='raft.AppendEntriesMessage.lastLogIndex', index=2,
-      number=3, type=3, cpp_type=2, label=1,
+      number=3, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -407,7 +407,7 @@ _LOGENTRY = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='index', full_name='raft.LogEntry.index', index=0,
-      number=1, type=3, cpp_type=2, label=1,
+      number=1, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,

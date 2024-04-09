@@ -5,7 +5,7 @@ package raft;
 message AppendEntriesMessage {
   int32 leaderID = 1;
   int32 currentTerm = 2;
-  int64 lastLogIndex = 3;
+  int32 lastLogIndex = 3;
   int32 lastLogTerm = 4;
   repeated LogEntry logEntries = 5;
   int32 leaderCommitIndex = 6;
@@ -53,7 +53,7 @@ message GetLeaderResponse {
 }
 
 message LogEntry {
-  int64 index = 1;
+  int32 index = 1;
   int32 term = 2;
   CommandMessage command = 3;
 }

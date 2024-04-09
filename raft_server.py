@@ -241,6 +241,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
     def AppendEntries(self, request, context):
         global TIMER_THREAD, TERM_NUMBER, SERVER_STATUS, ELECTION_TIMEOUT, LEADER, VOTED, SERVER_LOG, COMMIT_INDEX
 
+        print(f'############## {request.leaderID} {request.leaderAddress}')
         # Reset timer only if this server is a Follower
         if SERVER_STATUS.name == 'Follower':
             TIMER_THREAD.cancel()
@@ -253,9 +254,8 @@ class Raft(raft_pb2_grpc.RaftServicer):
             # Write SERVER_LOG
             if SERVER_LOG[request.lastLogIndex] is None and len(SERVER_LOG) > 0:
                 heartbeat_success = False
-            elif request.logEntries is None:
-                heartbeat_success = True
             else:
+
                 log_entry = request.logEntries[0]
                 log_command = log_entry.command
 
@@ -336,6 +336,7 @@ def send_heartbeat():
             message.lastLogTerm = 0 if len(SERVER_LOG) == 0 else SERVER_LOG[-1]['term']
             message.leaderCommitIndex = COMMIT_INDEX
             response = stub.AppendEntries(message)
+
             channel.close()
 
             if response.currentTerm > TERM_NUMBER:
