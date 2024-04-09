@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "To run a client instance: $0 <server_directory_file>"
+    exit 1
+fi
+
+python client.py "$1"
