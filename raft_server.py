@@ -255,6 +255,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
             else:
 
                 log_entry = request.logEntries[0]
+
                 log_command = log_entry.command
 
                 SERVER_LOG.append({'index': log_entry.index, 'term': log_entry.term,
@@ -349,10 +350,8 @@ def send_heartbeat():
                 break
 
         except grpc.RpcError as e:
-            print("An error occurred:", key, e)
+
             continue
-        except IndexError as e2:
-            print("Index error occurred:", key, e2)
 
 
 class RaftTimer(Timer):

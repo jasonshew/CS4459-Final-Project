@@ -180,15 +180,19 @@ def run():
                             print(f'Product Code: {k} | Product Name: {v} – Registered')
                     else:
                         print_failure_msg()
+                        print("AAAAA")
             except grpc.RpcError as e:
                 print_failure_msg()
+                print("BBBBB")
                 print(e)
             except Exception:
                 print_failure_msg()
+                print("CCCCC")
             except KeyboardInterrupt:
                 print("\nGOODBYE!")
                 sys.exit(0)
         print_failure_msg()
+        print("DDDDD")
     elif user_command[0] == GET:
         data_key = user_command[1]
         if STUB is not None:
@@ -203,16 +207,20 @@ def run():
                     print(f"\nThe product you are looking for doesn't exist")
             except grpc.RpcError as e:
                 print_failure_msg()
+                print("EEEEEEE")
                 print(e)
             except KeyboardInterrupt:
                 print("\nGOODBYE!")
                 sys.exit(0)
         else:
             print_failure_msg()
+            print("FFFFFF")
     else:
         print_failure_msg()
+        print("GGGGGGG")
 
 
 if __name__ == '__main__':
+    discover_server()
     while True:
         run()
