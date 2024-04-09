@@ -240,8 +240,6 @@ class Raft(raft_pb2_grpc.RaftServicer):
 
     def AppendEntries(self, request, context):
         global TIMER_THREAD, TERM_NUMBER, SERVER_STATUS, ELECTION_TIMEOUT, LEADER, VOTED, SERVER_LOG, COMMIT_INDEX
-
-        print(f'############## {request.leaderID} {request.leaderAddress}')
         # Reset timer only if this server is a Follower
         if SERVER_STATUS.name == 'Follower':
             TIMER_THREAD.cancel()
