@@ -1,8 +1,10 @@
-# How to run this program
+# DIM (Distributed Inventory Management)
+
+## How to run this program
 
 Place all files in the same directory.
 
-## Server side:
+### Server side:
 In the terminal, enter:
 `./dimserver <server_config_file.json> <server_directory.json>`
 
@@ -22,13 +24,13 @@ in `server_config.json`.
 The default files to use are `server_config.json` and `server_directory.json`. But, again, since you need to run multiple instances, it's necessary to use a different server configuration file for each instance.
 
 
-## Client side:
+### Client side:
 In the terminal, enter:
 `./dimclient <server_directory_file>`
 
 Replace `<server_directory.json>` with the correct file name. The default file to use is `server_directory.json`
 
-## File structure:
+### File structure:
 
 As to the format of both files, please refer to the json files in the repo.
 
@@ -61,7 +63,7 @@ Server configuration file structure:
     "peers": []
 }
 
-## Environment (The same environment for your Assignment 1 and 2):
+### Environment (The same environment for your Assignment 1 and 2):
 
 ```
 install:
