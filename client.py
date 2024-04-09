@@ -56,13 +56,13 @@ def discover_server():
             channel = grpc.insecure_channel(f'{val}')
             STUB = raft_pb2_grpc.RaftStub(channel)
             server_response = STUB.GetLeader(raft_pb2.EmptyMessage())
-            SERVER_ID = int(server_response.leaderID)
-            SERVER_ADDRESS = server_response.leaderAddress
-            SERVER_PORT = int(SERVER_ADDRESS.split(":")[1])
-
-            if int(key) == SERVER_ID:
-                this_server_is_leader = True
+            if (server_response):
+                SERVER_ID = int(server_response.leaderID)
+                leader_ip_port = server_response.leaderAddress
+                SERVER_ADDRESS = leader_ip_port.split(":")[0]
+                SERVER_PORT = int(leader_ip_port.split(":")[1])
                 print("Connected to service successfully.")
+                break
         except Exception:
             continue
         except KeyboardInterrupt:
@@ -71,12 +71,6 @@ def discover_server():
 
     if SERVER_ID is None or SERVER_ID == -1:
         return None
-
-    elif not this_server_is_leader:
-        channel = grpc.insecure_channel(f'{SERVER_ADDRESS}:{SERVER_PORT}')
-        STUB = raft_pb2_grpc.RaftStub(channel)
-        if STUB is not None:
-            print("Connected to service successfully.")
 
 
 def print_failure_msg():
@@ -165,14 +159,20 @@ def run():
     user_command = process_user_command()
     if user_command[0] == SET:
         data_kv_pair = {user_command[1]: user_command[2]}
+
         if STUB is not None:
+            print("********", STUB is None)
             try:
                 for k, v in data_kv_pair.items():
+                    print("------")
                     server_response = STUB.SetKeyVal(
                         raft_pb2.SetKeyValMessage(
                             key=k,
                             value=v
                         ))
+                    print("------")
+                    print("-------------", server_response)
+
                     if server_response.success:
                         with open(CLIENT_LOG_FILE, 'a') as file:
                             file.write(k + ' ' + v + '\n')
@@ -191,8 +191,9 @@ def run():
             except KeyboardInterrupt:
                 print("\nGOODBYE!")
                 sys.exit(0)
-        print_failure_msg()
-        print("DDDDD")
+        else:
+            print_failure_msg()
+            print("DDDDD")
     elif user_command[0] == GET:
         data_key = user_command[1]
         if STUB is not None:

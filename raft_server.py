@@ -179,6 +179,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
 
     def SetKeyVal(self, request, context):
         global SERVER_LOG, COMMIT_INDEX, LAST_APPLIED, SERVER_STATUS, TERM_NUMBER, LEADER, SERVER_DIRECTORY, PEER_SERVERS
+        print("****************************************", request.key, "*****************************", request.value)
         try:
             if SERVER_STATUS.name == 'Candidate':
                 return raft_pb2.SetKeyValResponse(success=False)
