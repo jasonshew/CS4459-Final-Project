@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\nraft.proto\x12\x04raft\"\xa7\x01\n\x14\x41ppendEntriesMessage\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x14\n\x0clastLogIndex\x18\x03 \x01(\x05\x12\x13\n\x0blastLogTerm\x18\x04 \x01(\x05\x12\"\n\nlogEntries\x18\x05 \x03(\x0b\x32\x0e.raft.LogEntry\x12\x19\n\x11leaderCommitIndex\x18\x06 \x01(\x05\"Q\n\x15\x41ppendEntriesResponse\x12\x12\n\nfollowerID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x0f\n\x07success\x18\x03 \x01(\x08\">\n\x12RequestVoteMessage\x12\x13\n\x0b\x63\x61ndidateID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\"?\n\x13RequestVoteResponse\x12\x13\n\x0b\x63urrentTerm\x18\x01 \x01(\x05\x12\x13\n\x0bvoteGranted\x18\x02 \x01(\x08\".\n\x10SetKeyValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"$\n\x11SetKeyValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x1c\n\rGetValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\"0\n\x0eGetValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\r\n\x05value\x18\x02 \x01(\t\"<\n\x11GetLeaderResponse\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x15\n\rleaderAddress\x18\x02 \x01(\t\"N\n\x08LogEntry\x12\r\n\x05index\x18\x01 \x01(\x05\x12\x0c\n\x04term\x18\x02 \x01(\x05\x12%\n\x07\x63ommand\x18\x03 \x01(\x0b\x32\x14.raft.CommandMessage\"?\n\x0e\x43ommandMessage\x12\x11\n\toperation\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12\r\n\x05value\x18\x03 \x01(\t\"\x0e\n\x0c\x45mptyMessage2\xc1\x02\n\x04Raft\x12H\n\rAppendEntries\x12\x1a.raft.AppendEntriesMessage\x1a\x1b.raft.AppendEntriesResponse\x12\x42\n\x0bRequestVote\x12\x18.raft.RequestVoteMessage\x1a\x19.raft.RequestVoteResponse\x12\x38\n\tGetLeader\x12\x12.raft.EmptyMessage\x1a\x17.raft.GetLeaderResponse\x12<\n\tSetKeyVal\x12\x16.raft.SetKeyValMessage\x1a\x17.raft.SetKeyValResponse\x12\x33\n\x06GetVal\x12\x13.raft.GetValMessage\x1a\x14.raft.GetValResponseb\x06proto3'
+  serialized_pb=b'\n\nraft.proto\x12\x04raft\"\xa7\x01\n\x14\x41ppendEntriesMessage\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x14\n\x0clastLogIndex\x18\x03 \x01(\x05\x12\x13\n\x0blastLogTerm\x18\x04 \x01(\x05\x12\"\n\nlogEntries\x18\x05 \x03(\x0b\x32\x0e.raft.LogEntry\x12\x19\n\x11leaderCommitIndex\x18\x06 \x01(\x05\"Q\n\x15\x41ppendEntriesResponse\x12\x12\n\nfollowerID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\x12\x0f\n\x07success\x18\x03 \x01(\x08\">\n\x12RequestVoteMessage\x12\x13\n\x0b\x63\x61ndidateID\x18\x01 \x01(\x05\x12\x13\n\x0b\x63urrentTerm\x18\x02 \x01(\x05\"?\n\x13RequestVoteResponse\x12\x13\n\x0b\x63urrentTerm\x18\x01 \x01(\x05\x12\x13\n\x0bvoteGranted\x18\x02 \x01(\x08\".\n\x10SetKeyValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"$\n\x11SetKeyValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x1c\n\rGetValMessage\x12\x0b\n\x03key\x18\x01 \x01(\t\"Y\n\x0eGetValResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\r\n\x05value\x18\x02 \x01(\t\x12\x10\n\x08leaderID\x18\x03 \x01(\x05\x12\x15\n\rleaderAddress\x18\x04 \x01(\t\"<\n\x11GetLeaderResponse\x12\x10\n\x08leaderID\x18\x01 \x01(\x05\x12\x15\n\rleaderAddress\x18\x02 \x01(\t\"N\n\x08LogEntry\x12\r\n\x05index\x18\x01 \x01(\x05\x12\x0c\n\x04term\x18\x02 \x01(\x05\x12%\n\x07\x63ommand\x18\x03 \x01(\x0b\x32\x14.raft.CommandMessage\"?\n\x0e\x43ommandMessage\x12\x11\n\toperation\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12\r\n\x05value\x18\x03 \x01(\t\"\x0e\n\x0c\x45mptyMessage2\xc1\x02\n\x04Raft\x12H\n\rAppendEntries\x12\x1a.raft.AppendEntriesMessage\x1a\x1b.raft.AppendEntriesResponse\x12\x42\n\x0bRequestVote\x12\x18.raft.RequestVoteMessage\x1a\x19.raft.RequestVoteResponse\x12\x38\n\tGetLeader\x12\x12.raft.EmptyMessage\x1a\x17.raft.GetLeaderResponse\x12<\n\tSetKeyVal\x12\x16.raft.SetKeyValMessage\x1a\x17.raft.SetKeyValResponse\x12\x33\n\x06GetVal\x12\x13.raft.GetValMessage\x1a\x14.raft.GetValResponseb\x06proto3'
 )
 
 
@@ -341,6 +341,20 @@ _GETVALRESPONSE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='leaderID', full_name='raft.GetValResponse.leaderID', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='leaderAddress', full_name='raft.GetValResponse.leaderAddress', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -354,7 +368,7 @@ _GETVALRESPONSE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=518,
-  serialized_end=566,
+  serialized_end=607,
 )
 
 
@@ -392,8 +406,8 @@ _GETLEADERRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=568,
-  serialized_end=628,
+  serialized_start=609,
+  serialized_end=669,
 )
 
 
@@ -438,8 +452,8 @@ _LOGENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=630,
-  serialized_end=708,
+  serialized_start=671,
+  serialized_end=749,
 )
 
 
@@ -484,8 +498,8 @@ _COMMANDMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=710,
-  serialized_end=773,
+  serialized_start=751,
+  serialized_end=814,
 )
 
 
@@ -509,8 +523,8 @@ _EMPTYMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=775,
-  serialized_end=789,
+  serialized_start=816,
+  serialized_end=830,
 )
 
 _APPENDENTRIESMESSAGE.fields_by_name['logEntries'].message_type = _LOGENTRY
@@ -622,8 +636,8 @@ _RAFT = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=792,
-  serialized_end=1113,
+  serialized_start=833,
+  serialized_end=1154,
   methods=[
   _descriptor.MethodDescriptor(
     name='AppendEntries',

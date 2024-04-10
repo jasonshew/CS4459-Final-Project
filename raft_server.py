@@ -31,6 +31,7 @@ COMMIT_INDEX = 0
 NEXT_INDEX = {}
 MATCH_INDEX = {}
 PEER_SERVERS = {}
+CONFIGURATION_SUCCESS = False
 
 
 class ServerState(Enum):
@@ -40,7 +41,7 @@ class ServerState(Enum):
 
 
 def config_server():
-    global SERVER_ID, SERVER_LOG_FILE, TERM_NUMBER, SERVER_ADDRESS, SERVER_PORT, PEER_SERVERS, ELECTION_TIMEOUT, SERVER_CONFIG_FILE, SERVER_DIRECTORY_FILE, PEER_SERVERS
+    global SERVER_ID, SERVER_LOG_FILE, TERM_NUMBER, SERVER_ADDRESS, SERVER_PORT, PEER_SERVERS, ELECTION_TIMEOUT, SERVER_CONFIG_FILE, SERVER_DIRECTORY_FILE, PEER_SERVERS, CONFIGURATION_SUCCESS
     if len(sys.argv) == 3:
         SERVER_CONFIG_FILE = sys.argv[1]
         SERVER_DIRECTORY_FILE = sys.argv[2]
@@ -67,8 +68,9 @@ def config_server():
                     NEXT_INDEX[int(each_server["server_id"])] = 0
                     with open(SERVER_CONFIG_FILE, 'w') as file_3:
                         json.dump(server_config_info, file_3, sort_keys=False, indent=4)
-    except Exception:
-        print("Server configuration file or server directory not found. Check your local filesystem and try again.")
+                    CONFIGURATION_SUCCESS = True
+    except Exception as e:
+        print("Server configuration file or server directory not found. Check your local filesystem and try again.", e)
         sys.exit(0)
     SERVER_ID = int(server_config_info["server_id"])
     SERVER_ADDRESS = server_config_info["address"]
@@ -77,31 +79,32 @@ def config_server():
 
 
 def register_server():
-    this_server = {
-        "server_id": SERVER_ID,
-        "address": SERVER_ADDRESS,
-        "port": SERVER_PORT
-    }
-    try:
-        with open(SERVER_DIRECTORY_FILE, 'r') as file_1:
-            servers_list = json.load(file_1)
-            for server in servers_list:
-                if str(server["server_id"]) == str(SERVER_ID):
-                    print("This server is a known instance in the server directory.")
-                    return
-            servers_list.append(this_server)
-            with open(SERVER_DIRECTORY_FILE, 'w') as file_2:
-                json.dump(servers_list, file_2, sort_keys=False, indent=4)
-                print("This new server has been registered successfully.")
-    except FileNotFoundError:
-        print("Server directory not found. Registration failed.")
-        sys.exit(0)
-    except PermissionError:
-        print("Permission denied. Registration failed.")
-        sys.exit(0)
-    except Exception:
-        print("Registration failed for some reason.")
-        sys.exit(0)
+    if CONFIGURATION_SUCCESS:
+        this_server = {
+            "server_id": SERVER_ID,
+            "address": SERVER_ADDRESS,
+            "port": SERVER_PORT
+        }
+        try:
+            with open(SERVER_DIRECTORY_FILE, 'r') as file_1:
+                servers_list = json.load(file_1)
+                for server in servers_list:
+                    if str(server["server_id"]) == str(SERVER_ID):
+                        print("This server is a known instance in the server directory.")
+                        return
+                servers_list.append(this_server)
+                with open(SERVER_DIRECTORY_FILE, 'w') as file_2:
+                    json.dump(servers_list, file_2, sort_keys=False, indent=4)
+                    print("This new server has been registered successfully.")
+        except FileNotFoundError:
+            print("Server directory not found. Registration failed.")
+            sys.exit(0)
+        except PermissionError:
+            print("Permission denied. Registration failed.")
+            sys.exit(0)
+        except Exception:
+            print("Registration failed for some reason.")
+            sys.exit(0)
 
 
 def verify_server_log():
@@ -215,25 +218,28 @@ class Raft(raft_pb2_grpc.RaftServicer):
     def SetKeyVal(self, request, context):
         global SERVER_LOG, COMMIT_INDEX, SERVER_STATUS, TERM_NUMBER, LEADER, SERVER_DIRECTORY, PEER_SERVERS
         print(f"This server (#{SERVER_ID}) received a client request as a {SERVER_STATUS.name}")
+        try:
+            if SERVER_STATUS.name == 'Candidate':
+                return raft_pb2.SetKeyValResponse(success=False)
 
-        if SERVER_STATUS.name == 'Candidate':
+            elif SERVER_STATUS.name == 'Leader':
+                new_log_entry = {'index': len(SERVER_LOG), 'term': TERM_NUMBER,
+                                 'command': ['WRITE', request.key, request.value], 'voted_for': VOTED,
+                                 'commit_index': COMMIT_INDEX}
+
+                SERVER_LOG.append(new_log_entry)
+                replicate_log(new_log_entry)
+                save_server_log(new_log_entry)
+
+                return raft_pb2.SetKeyValResponse(success=True)
+            else:  # Follower case
+                leader_channel = grpc.insecure_channel(PEER_SERVERS[int(LEADER)])
+                leader_stub = raft_pb2_grpc.RaftStub(leader_channel)
+                message = raft_pb2.SetKeyValMessage(key=request.key, value=request.value)
+                return leader_stub.SetKeyVal(message)
+        except Exception as e:
+            print("++++++++++++", e, "++++++++++")
             return raft_pb2.SetKeyValResponse(success=False)
-
-        elif SERVER_STATUS.name == 'Leader':
-            new_log_entry = {'index': len(SERVER_LOG), 'term': TERM_NUMBER,
-                             'command': ['WRITE', request.key, request.value], 'voted_for': VOTED,
-                             'commit_index': COMMIT_INDEX}
-
-            SERVER_LOG.append(new_log_entry)
-            replicate_log(new_log_entry)
-            save_server_log(new_log_entry)
-
-            return raft_pb2.SetKeyValResponse(success=True)
-        else:  # Follower case
-            leader_channel = grpc.insecure_channel(PEER_SERVERS[int(LEADER)])
-            leader_stub = raft_pb2_grpc.RaftStub(leader_channel)
-            message = raft_pb2.SetKeyValMessage(key=request.key, value=request.value)
-            return leader_stub.SetKeyVal(message)
 
     def GetVal(self, request, context):
         global SERVER_LOG
@@ -242,6 +248,10 @@ class Raft(raft_pb2_grpc.RaftServicer):
         for entry in SERVER_LOG:
             if request.key == entry['command'][1]:
                 target_value = entry['command'][2]
+
+        if LEADER is not None:
+            return raft_pb2.GetValResponse(success=True, value=target_value, leaderID=LEADER,
+                                           leaderAddress=SERVER_DIRECTORY[LEADER])
         return raft_pb2.GetValResponse(success=True, value=target_value)
 
     def GetLeader(self, request, context):
@@ -252,6 +262,7 @@ class Raft(raft_pb2_grpc.RaftServicer):
             current_leader = -1
             address = ''
         else:
+
             if LEADER == SERVER_ID:
                 address = f'{SERVER_ADDRESS}:{SERVER_PORT}'
             else:
@@ -393,7 +404,7 @@ def generate_random_timeout():
 def start_election():
     global SERVER_STATUS, SERVER_DIRECTORY, TERM_NUMBER, SERVER_ID, TIMER_THREAD, VOTED, LEADER, ELECTION_TIMEOUT, IS_ELECTION_FINISHED, PEER_SERVERS
 
-    if LEADER is None or int(LEADER) == -1:
+    if LEADER is None or LEADER == -1:
         print("Leader Server not discovered yet")
     else:
         print(f'Leader Server #{LEADER} went down')

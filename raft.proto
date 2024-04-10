@@ -45,6 +45,8 @@ message GetValMessage {
 message GetValResponse {
   bool success = 1;
   string value = 2;
+  int32 leaderID = 3;
+  string leaderAddress = 4;
 }
 
 message GetLeaderResponse {
