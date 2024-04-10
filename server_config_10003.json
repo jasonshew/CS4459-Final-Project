@@ -22,6 +22,11 @@
             "server_id": 10004,
             "address": "localhost",
             "port": 50004
+        },
+        {
+            "server_id": 5555,
+            "address": "localhost",
+            "port": 5555
         }
     ]
 }
