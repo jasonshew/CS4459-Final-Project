@@ -212,28 +212,25 @@ class Raft(raft_pb2_grpc.RaftServicer):
     def SetKeyVal(self, request, context):
         global SERVER_LOG, COMMIT_INDEX, SERVER_STATUS, TERM_NUMBER, LEADER, SERVER_DIRECTORY, PEER_SERVERS
         print(f"This server (#{SERVER_ID}) received a client request as a {SERVER_STATUS.name}")
-        try:
-            if SERVER_STATUS.name == 'Candidate':
-                return raft_pb2.SetKeyValResponse(success=False)
 
-            if SERVER_STATUS.name == 'Leader':
-                new_log_entry = {'index': len(SERVER_LOG), 'term': TERM_NUMBER,
-                                 'command': ['WRITE', request.key, request.value], 'voted_for': VOTED,
-                                 'commit_index': COMMIT_INDEX}
-
-                SERVER_LOG.append(new_log_entry)
-                replicate_log(new_log_entry)
-                save_server_log(new_log_entry)
-
-                return raft_pb2.SetKeyValResponse(success=True)
-            else:  # Follower case
-                leader_channel = grpc.insecure_channel(PEER_SERVERS[int(LEADER)])
-                leader_stub = raft_pb2_grpc.RaftStub(leader_channel)
-                message = raft_pb2.SetKeyValMessage(key=request.key, value=request.value)
-                return leader_stub.SetKeyVal(message)
-        except Exception as Error:
-            print("An error occurred:", Error)
+        if SERVER_STATUS.name == 'Candidate':
             return raft_pb2.SetKeyValResponse(success=False)
+
+        elif SERVER_STATUS.name == 'Leader':
+            new_log_entry = {'index': len(SERVER_LOG), 'term': TERM_NUMBER,
+                             'command': ['WRITE', request.key, request.value], 'voted_for': VOTED,
+                             'commit_index': COMMIT_INDEX}
+
+            SERVER_LOG.append(new_log_entry)
+            replicate_log(new_log_entry)
+            save_server_log(new_log_entry)
+
+            return raft_pb2.SetKeyValResponse(success=True)
+        else:  # Follower case
+            leader_channel = grpc.insecure_channel(PEER_SERVERS[int(LEADER)])
+            leader_stub = raft_pb2_grpc.RaftStub(leader_channel)
+            message = raft_pb2.SetKeyValMessage(key=request.key, value=request.value)
+            return leader_stub.SetKeyVal(message)
 
     def GetVal(self, request, context):
         global SERVER_LOG

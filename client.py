@@ -23,16 +23,15 @@ STUB = None
 SET = "WRITE"
 GET = "READ"
 SERVER_RESPONSE = None
-
+USER_REQUEST = None
 QUIT_SYMBOL = "//"
 CANCEL_SYMBOL = ".."
 
 
-# Code to discover the primary's address
-def discover_server():
+def fetch_server_directory():
     global SERVER_ID, SERVER_ADDRESS, SERVER_PORT, SERVER_DIRECTORY_FILE, STUB
-    if len(sys.argv) == 3:
-        SERVER_DIRECTORY_FILE = sys.argv[2]
+    if len(sys.argv) == 2:
+        SERVER_DIRECTORY_FILE = sys.argv[1]
     dirname = os.path.dirname(__file__)
     if '/' not in SERVER_DIRECTORY_FILE:
         SERVER_DIRECTORY_FILE = os.path.join(dirname, SERVER_DIRECTORY_FILE)
@@ -49,26 +48,36 @@ def discover_server():
         print("Server directory is not valid. Check your local filesystem and try again.")
         sys.exit(0)
 
-    for key, val in SERVER_DIRECTORY.items():
-        try:
-            channel = grpc.insecure_channel(f'{val}')
-            STUB = raft_pb2_grpc.RaftStub(channel)
-            server_response = STUB.GetLeader(raft_pb2.EmptyMessage())
-            if server_response.leaderID != -1:
-                SERVER_ID = int(server_response.leaderID)
-                leader_ip_port = server_response.leaderAddress
-                SERVER_ADDRESS = leader_ip_port.split(":")[0]
-                SERVER_PORT = int(leader_ip_port.split(":")[1])
-                print("🟢 Connected to service successfully\n")
-                break
-        except Exception:
-            continue
-        except KeyboardInterrupt:
-            print("\nGOODBYE!\n")
-            sys.exit(0)
 
-    if SERVER_ID is None or SERVER_ID == -1:
-        return None
+def connect_server(notify=True):
+    global SERVER_ID, SERVER_ADDRESS, SERVER_PORT, STUB
+    retry = len(SERVER_DIRECTORY.keys()) * 2
+    server_response = None
+    while retry > 0 and not server_response:
+        for key, val in SERVER_DIRECTORY.items():
+            try:
+                channel = grpc.insecure_channel(f'{val}')
+                STUB = raft_pb2_grpc.RaftStub(channel)
+                server_response = STUB.GetLeader(raft_pb2.EmptyMessage())
+                if server_response.leaderID != -1:
+                    SERVER_ID = int(server_response.leaderID)
+                    leader_ip_port = server_response.leaderAddress
+                    SERVER_ADDRESS = leader_ip_port.split(":")[0]
+                    SERVER_PORT = int(leader_ip_port.split(":")[1])
+                    if notify:
+                        print("🟢 Connected to service successfully\n")
+                    break
+            except Exception:
+                retry -= 1
+                continue
+            except KeyboardInterrupt:
+                print("\nGOODBYE!\n")
+                sys.exit(0)
+        retry -= 1
+
+    if retry == 0 and (STUB is None or SERVER_ID == -1):
+        print_failure_msg()
+        sys.exit(0)
 
 
 def print_failure_msg():
@@ -153,23 +162,18 @@ def process_user_command():
 
 
 def run():
-    global SERVER_RESPONSE
+    global USER_REQUEST
+    server_response = None
     user_command = process_user_command()
     if user_command[0] == SET:
-        data_kv_pair = {user_command[1]: user_command[2]}
-        if STUB is not None:
+        USER_REQUEST = (user_command[1], user_command[2])
+        if server_response is not None:
             try:
-                for k, v in data_kv_pair.items():
-                    SERVER_RESPONSE = STUB.SetKeyVal(
-                        raft_pb2.SetKeyValMessage(
-                            key=k,
-                            value=v
-                        ))
-                    with open(CLIENT_LOG_FILE, 'a') as file:
-                        file.write(k + ' ' + v + '\n')
-                if SERVER_RESPONSE is None:
-                    discover_server()
-
+                server_response = STUB.SetKeyVal(
+                    raft_pb2.SetKeyValMessage(
+                        key=USER_REQUEST[0],
+                        value=USER_REQUEST[1]
+                    ))
             except grpc.RpcError as e:
                 pass
             except Exception:
@@ -177,40 +181,55 @@ def run():
             except KeyboardInterrupt:
                 print("\nGOODBYE!\n")
                 sys.exit(0)
-            if SERVER_RESPONSE.success:
-                print("\n✅ Your request was processed.\n\nThe following product has been"
-                      "successfully registered:")
-                print_bold(f'\nProduct Code: {k}\nProduct Name: {v}\n')
-            else:
-                print("🟡 Reconnecting to service ...")
 
+            with open(CLIENT_LOG_FILE, 'a') as file:
+                file.write(USER_REQUEST[0] + ' ' + USER_REQUEST[1] + '\n')
+
+            retry = len(SERVER_DIRECTORY.keys()) * 2
+            while retry > 0 and not server_response.success:
+                connect_server()
+                server_response = STUB.SetKeyVal(
+                    raft_pb2.SetKeyValMessage(
+                        key=USER_REQUEST[0],
+                        value=USER_REQUEST[1]
+                    ))
+                if not server_response or not server_response.success:
+                    retry -= 1
+            if server_response.success:
+                print("\n✅ Your request was processed.\n\nThe following product has been successfully registered:")
+                print_bold(f'\nProduct Code: {USER_REQUEST[0]}\nProduct Name: {USER_REQUEST[1]}\n')
+                USER_REQUEST = None
+            else:
+                print_failure_msg()
+                print("BBBBBBBBBB")
+                sys.exit(0)
 
     elif user_command[0] == GET:
-        data_key = user_command[1]
+        USER_REQUEST = user_command[1]
         if STUB is not None:
             try:
                 SERVER_RESPONSE = STUB.GetVal(
                     raft_pb2.GetValMessage(
-                        key=data_key,
+                        key=USER_REQUEST,
                     ))
                 if SERVER_RESPONSE.success and SERVER_RESPONSE.value:
                     print(
                         f"\n✅ Here is the product you're looking for: \n")
-                    print_bold(f"\n{SERVER_RESPONSE.value} (Product Code: {data_key})\n")
+                    print_bold(f"\n{SERVER_RESPONSE.value} (Product Code: {USER_REQUEST})\n")
                 elif SERVER_RESPONSE.success:
-                    print(f"\n🥹 Sorry, no product with the code {data_key} has been found.\n")
+                    print(f"\n🥹 Sorry, no product with the code {USER_REQUEST} has been found.\n")
                 else:
-                    print("Reconnecting to service B...")
-                    discover_server()
+                    connect_server(notify=False)
             except grpc.RpcError as e:
-                pass
+                connect_server(notify=False)
             except KeyboardInterrupt:
                 print("\nGOODBYE!\n")
                 sys.exit(0)
         else:
             print_failure_msg()
+
     else:
-        print("🔴 Client request is invalid.")
+        print(f"🔴 Client request {user_command[0]} is invalid.")
         sys.exit(0)
 
 
@@ -219,7 +238,9 @@ def print_bold(text):
 
 
 if __name__ == '__main__':
+
     print_bold("\n\n🍀 THANKS FOR USING DIM (DISTRIBUTED INVENTORY MANAGEMENT) SERVICE\n\n")
     while True:
-        discover_server()
+        fetch_server_directory()
+        connect_server(notify=True)
         run()
