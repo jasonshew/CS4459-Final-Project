@@ -183,6 +183,9 @@ def replicate_log(new_log):
                 MATCH_INDEX[key] = NEXT_INDEX[key] - 1
         except IndexError or grpc.RpcError:
             continue
+        except grpc._channel._InactiveRpcError:
+            print(f"Server on port #{SERVER_PORT} is unavailable")
+
     if replication_success_num > len(list(SERVER_DIRECTORY.keys())) / 2:
         COMMIT_INDEX += 1
 

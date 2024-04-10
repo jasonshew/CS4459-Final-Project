@@ -1,0 +1,13 @@
+[
+    {
+        "index": 0,
+        "term": 16,
+        "command": [
+            "WRITE",
+            "2",
+            "2"
+        ],
+        "voted_for": null,
+        "commit_index": 0
+    }
+]

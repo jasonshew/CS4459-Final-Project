@@ -22,7 +22,6 @@ CLIENT_LOG_FILE = 'client.txt'
 STUB = None
 SET = "WRITE"
 GET = "READ"
-SERVER_RESPONSE = None
 USER_REQUEST = None
 QUIT_SYMBOL = "//"
 CANCEL_SYMBOL = ".."
@@ -161,31 +160,29 @@ def process_user_command():
         sys.exit(0)
 
 
-def run():
+def run(serverResponse):
     global USER_REQUEST
-    server_response = None
+    server_response = serverResponse
     user_command = process_user_command()
     if user_command[0] == SET:
         USER_REQUEST = (user_command[1], user_command[2])
-        if server_response is not None:
-            try:
-                server_response = STUB.SetKeyVal(
-                    raft_pb2.SetKeyValMessage(
-                        key=USER_REQUEST[0],
-                        value=USER_REQUEST[1]
-                    ))
-            except grpc.RpcError as e:
-                pass
-            except Exception:
-                pass
-            except KeyboardInterrupt:
-                print("\nGOODBYE!\n")
-                sys.exit(0)
+        try:
+            server_response = STUB.SetKeyVal(
+                raft_pb2.SetKeyValMessage(
+                    key=USER_REQUEST[0],
+                    value=USER_REQUEST[1]
+                ))
+        except Exception:
+            pass
+        except KeyboardInterrupt:
+            print("\nGOODBYE!\n")
+            sys.exit(0)
 
-            with open(CLIENT_LOG_FILE, 'a') as file:
-                file.write(USER_REQUEST[0] + ' ' + USER_REQUEST[1] + '\n')
+        with open(CLIENT_LOG_FILE, 'a') as file:
+            file.write(USER_REQUEST[0] + ' ' + USER_REQUEST[1] + '\n')
 
-            retry = len(SERVER_DIRECTORY.keys()) * 2
+        retry = len(SERVER_DIRECTORY.keys()) * 2
+        if (server_response != None):
             while retry > 0 and not server_response.success:
                 connect_server()
                 server_response = STUB.SetKeyVal(
@@ -208,15 +205,15 @@ def run():
         USER_REQUEST = user_command[1]
         if STUB is not None:
             try:
-                SERVER_RESPONSE = STUB.GetVal(
+                server_response = STUB.GetVal(
                     raft_pb2.GetValMessage(
                         key=USER_REQUEST,
                     ))
-                if SERVER_RESPONSE.success and SERVER_RESPONSE.value:
+                if server_response.success and server_response.value:
                     print(
                         f"\n✅ Here is the product you're looking for: \n")
-                    print_bold(f"\n{SERVER_RESPONSE.value} (Product Code: {USER_REQUEST})\n")
-                elif SERVER_RESPONSE.success:
+                    print_bold(f"\n{server_response.value} (Product Code: {USER_REQUEST})\n")
+                elif server_response.success:
                     print(f"\n🥹 Sorry, no product with the code {USER_REQUEST} has been found.\n")
                 else:
                     connect_server(notify=False)
@@ -232,6 +229,8 @@ def run():
         print(f"🔴 Client request {user_command[0]} is invalid.")
         sys.exit(0)
 
+    return server_response
+
 
 def print_bold(text):
     print(f"\033[1m{text}\033[0m")
@@ -242,5 +241,5 @@ if __name__ == '__main__':
     print_bold("\n\n🍀 THANKS FOR USING DIM (DISTRIBUTED INVENTORY MANAGEMENT) SERVICE\n\n")
     while True:
         fetch_server_directory()
-        connect_server(notify=True)
-        run()
+        server_response = connect_server(notify=True)
+        run(server_response)

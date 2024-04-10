@@ -1,0 +1,46 @@
+[
+    {
+        "index": 5,
+        "term": 10,
+        "command": [
+            "WRITE",
+            "2",
+            "2"
+        ],
+        "voted_for": 10001,
+        "commit_index": 0
+    },
+    {
+        "index": 6,
+        "term": 10,
+        "command": [
+            "WRITE",
+            "4",
+            "4"
+        ],
+        "voted_for": 10001,
+        "commit_index": 0
+    },
+    {
+        "index": 7,
+        "term": 10,
+        "command": [
+            "WRITE",
+            "6",
+            "6"
+        ],
+        "voted_for": 10001,
+        "commit_index": 0
+    },
+    {
+        "index": 0,
+        "term": 16,
+        "command": [
+            "WRITE",
+            "2",
+            "2"
+        ],
+        "voted_for": 10004,
+        "commit_index": 0
+    }
+]
