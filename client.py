@@ -111,7 +111,7 @@ def connect_to_leader():
         LEADERS_LIST.append(LEADER_ID)
     elif LEADER_ID != LEADERS_LIST[-1]:
         LEADERS_LIST.append(LEADER_ID)
-    print(f"🟢 The Leader server (#{LEADER_ID}) is ready to serve you.")
+    print(f"🟢 Leader server (#{LEADER_ID}) is ready to serve you.")
 
 
 def get_input_product_code():
@@ -196,6 +196,7 @@ def run():
     if user_command[0] == SET:
         USER_REQUEST = (user_command[1], user_command[2])
         try:
+            connect_to_any_server(notify=False)
             SET_KEY_VAL_RESPONSE = ANY_STUB.SetKeyVal(
                 raft_pb2.SetKeyValMessage(
                     key=USER_REQUEST[0],
@@ -218,7 +219,12 @@ def run():
             else:
                 print_failure_msg()
         except grpc.RpcError or Exception as e:
-            print("AAAAA", e)
+
+            connect_to_any_server(notify=True)
+            SET_KEY_VAL_RESPONSE = LEADER_STUB.SetKeyVal(raft_pb2.SetKeyValMessage(
+                key=USER_REQUEST[0],
+                value=USER_REQUEST[1]
+            ))
             pass
         except KeyboardInterrupt:
             print("\nGOODBYE!\n")
@@ -241,9 +247,10 @@ def run():
                     print(f"\n🥹 Sorry, no product with the code {USER_REQUEST} has been found.\n")
 
             else:
-                connect_to_any_server(notify=False)
-
+                connect_to_any_server(notify=True)
+                pass
         except grpc.RpcError or Exception as e:
+            connect_to_any_server(notify=True)
             pass
         except KeyboardInterrupt:
             sys.exit(0)

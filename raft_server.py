@@ -57,7 +57,7 @@ def config_server():
             server_config_info["peers"].clear()
             for each_server in servers_list:
                 SERVER_DIRECTORY.update(
-                    {each_server["server_id"]: each_server["address"] + ":" + str(each_server["port"])})
+                    {each_server["server_id"]: f'{each_server["address"]}:{str(each_server["port"])}'})
                 if each_server["server_id"] != server_config_info["server_id"]:
                     server_config_info["peers"].append(
                         {"server_id": int(each_server["server_id"]), "address": each_server["address"],
@@ -68,7 +68,7 @@ def config_server():
                     NEXT_INDEX[int(each_server["server_id"])] = 0
                     with open(SERVER_CONFIG_FILE, 'w') as file_3:
                         json.dump(server_config_info, file_3, sort_keys=False, indent=4)
-                    CONFIGURATION_SUCCESS = True
+
     except Exception as e:
         print("Server configuration file or server directory not found. Check your local filesystem and try again.", e)
         sys.exit(0)
@@ -76,9 +76,12 @@ def config_server():
     SERVER_ADDRESS = server_config_info["address"]
     SERVER_PORT = int(server_config_info["port"])
     SERVER_LOG_FILE = f'server_log_{SERVER_ID}.json'
+    if SERVER_ID:
+        CONFIGURATION_SUCCESS = True
 
 
 def register_server():
+    global CONFIGURATION_SUCCESS, SERVER_DIRECTORY, SERVER_DIRECTORY_FILE, SERVER_ID, SERVER_ADDRESS, SERVER_PORT
     if CONFIGURATION_SUCCESS:
         this_server = {
             "server_id": SERVER_ID,
@@ -93,6 +96,8 @@ def register_server():
                         print("This server is a known instance in the server directory.")
                         return
                 servers_list.append(this_server)
+                SERVER_DIRECTORY.update(
+                    {this_server["server_id"]: f'{this_server["address"]}:{str(this_server["port"])}'})
                 with open(SERVER_DIRECTORY_FILE, 'w') as file_2:
                     json.dump(servers_list, file_2, sort_keys=False, indent=4)
                     print("This new server has been registered successfully.")
@@ -270,18 +275,23 @@ class Raft(raft_pb2_grpc.RaftServicer):
         return raft_pb2.GetLeaderResponse(leaderID=current_leader, leaderAddress=address)
 
     def AppendEntries(self, request, context):
-        global TIMER_THREAD, TERM_NUMBER, SERVER_STATUS, ELECTION_TIMEOUT, LEADER, VOTED, SERVER_LOG, COMMIT_INDEX
+        global TIMER_THREAD, TERM_NUMBER, SERVER_STATUS, ELECTION_TIMEOUT, LEADER, VOTED, SERVER_LOG, COMMIT_INDEX, SERVER_ID
+
+        heartbeat_recognised = False
+
+        # if not request.logEntries:
+        #     print(f'Heartbeat received from Leader #{request.leaderID} to this server #{SERVER_ID}')
+
         # Reset timer only if this server is a Follower
         if SERVER_STATUS.name == 'Follower':
             TIMER_THREAD.cancel()
 
-        heartbeat_success = False
         if request.currentTerm >= TERM_NUMBER:
-            heartbeat_success = True
+            heartbeat_recognised = True
             LEADER = request.leaderID
 
             if len(SERVER_LOG) > 0 and SERVER_LOG[request.lastLogIndex] is None:
-                heartbeat_success = False
+                heartbeat_recognised = False
             else:
                 if request.logEntries:
                     log_entry = request.logEntries[0]
@@ -316,7 +326,8 @@ class Raft(raft_pb2_grpc.RaftServicer):
             TIMER_THREAD = RaftTimer(ELECTION_TIMEOUT, start_election)
             TIMER_THREAD.start()
 
-        return raft_pb2.AppendEntriesResponse(followerID=SERVER_ID, currentTerm=TERM_NUMBER, success=heartbeat_success)
+        return raft_pb2.AppendEntriesResponse(followerID=SERVER_ID, currentTerm=TERM_NUMBER,
+                                              success=heartbeat_recognised)
 
     def RequestVote(self, request, context):
         global VOTED, TERM_NUMBER, SERVER_STATUS, TIMER_THREAD, ELECTION_TIMEOUT, LEADER
@@ -358,6 +369,7 @@ def send_heartbeat():
     for key in list(PEER_SERVERS.keys()):
 
         try:
+
             channel = grpc.insecure_channel(PEER_SERVERS[key])
             stub = raft_pb2_grpc.RaftStub(channel)
 
@@ -366,9 +378,7 @@ def send_heartbeat():
             message.leaderID = SERVER_ID
             message.currentTerm = TERM_NUMBER
             message.lastLogIndex = 0 if (not SERVER_LOG) else SERVER_LOG[-1]['index']
-
             message.lastLogTerm = 0 if (not SERVER_LOG) else SERVER_LOG[-1]['term']
-
             message.leaderCommitIndex = COMMIT_INDEX
             response = stub.AppendEntries(message)
 
